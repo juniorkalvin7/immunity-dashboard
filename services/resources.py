@@ -112,15 +112,18 @@ def _top_disk(percent_items: list[dict]) -> list[dict]:
         key = item.get("key_", "").lower()
         name = item.get("name", "").lower()
         is_disk = (
-            ("vfs.fs" in key and any(token in key for token in ("pused", "util", "usage")))
+            ("vfs.fs" in key and "pused" in key)
             or "space utilization" in name
-            or "disk utilization" in name
             or "filesystem utilization" in name
             or "file system utilization" in name
             or "utilização de disco" in name
-            or "uso de disco" in name
+            or "uso de espaço" in name
         )
-        if not is_disk or "inode" in key or "inode" in name:
+        is_performance_counter = any(
+            token in f"{key} {name}"
+            for token in ("perf_counter", "physicaldisk", "idle time", "disk busy", "disk activity")
+        )
+        if not is_disk or is_performance_counter or "inode" in key or "inode" in name:
             continue
         value = _number(item.get("lastvalue"))
         if value is None:
