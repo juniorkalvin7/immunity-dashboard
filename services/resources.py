@@ -73,7 +73,7 @@ def _top_memory() -> list[dict]:
         value = _number(item.get("lastvalue"))
         if value is None:
             continue
-        if key == "vm.memory.utilization":
+        if key == "vm.memory.utilization" or "pused" in key:
             used = value
         elif "pavailable" in key:
             used = 100.0 - value
@@ -85,14 +85,15 @@ def _top_memory() -> list[dict]:
 
 def _top_disk() -> list[dict]:
     rows_by_host = {}
-    for item in _resource_items("vfs.fs.size["):
+    for item in _resource_items("vfs.fs"):
         key = item.get("key_", "")
         if ",pused]" not in key:
             continue
         value = _number(item.get("lastvalue"))
         if value is None:
             continue
-        mount = key[len("vfs.fs.size[") : key.rfind(",pused]")]
+        open_bracket = key.find("[")
+        mount = key[open_bracket + 1 : key.rfind(",pused]")] if open_bracket >= 0 else key
         row = _row(item, value, mount)
         current = rows_by_host.get(item.get("hostid"))
         if current is None or row["value"] > current["value"]:
