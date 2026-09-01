@@ -92,7 +92,31 @@ function startPolling(loadAndRender) {
   setInterval(tick, REFRESH_MS);
 }
 
+async function refreshStatusBar() {
+  if (!document.querySelector(".operations-strip")) return;
+  try {
+    const data = await fetchJson("/api/statusbar");
+    const values = {
+      "bar-host-down": data.hosts.down,
+      "bar-host-alert": data.hosts.alert,
+      "bar-host-ok": data.hosts.ok,
+      "bar-svc-critical": data.services.critical,
+      "bar-svc-average": data.services.average,
+      "bar-svc-warning": data.services.warning,
+      "bar-svc-ok": data.services.ok,
+    };
+    Object.entries(values).forEach(([id, value]) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = Number(value).toLocaleString("pt-BR");
+    });
+  } catch (_) {
+    // The page's normal connection indicator reports API failures.
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   hydrateByteCells();
   hydrateIcons();
+  refreshStatusBar();
+  setInterval(refreshStatusBar, REFRESH_MS);
 });
