@@ -1,14 +1,12 @@
 {% extends "base.html" %}
 {% from "_macros.html" import severity_badge, metric_bar %}
 {% block title %}Firewalls Sophos{% endblock %}
+{% block breadcrumb_current %}Firewalls Sophos{% endblock %}
+{% block page_title %}Firewalls Sophos{% endblock %}
+{% block page_sub %}IPsec, SSL VPN, saúde do equipamento{% endblock %}
 
 {% block content %}
 <section class="page" id="page-firewalls">
-  <header class="page-header">
-    <h1>Firewalls Sophos</h1>
-    <span class="page-sub">IPsec, SSL VPN, saúde do equipamento</span>
-  </header>
-
   <section class="summary" id="fw-summary">
     <div class="stat">
       <div class="stat-value" id="stat-hosts">{{ summary.count }}</div>
