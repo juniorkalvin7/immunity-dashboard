@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Visão Geral{% endblock %}
+{% block breadcrumb_current %}Visão Geral{% endblock %}
+{% block page_title %}Visão Geral{% endblock %}
+{% block page_sub %}Panorama operacional do ambiente monitorado pelo Zabbix{% endblock %}
+
+{% block content %}
+<section class="page overview-page" id="page-overview">
+  <div class="overview-kpis">
+    <article class="overview-kpi resource-kpi" data-resource-status="cpu">
+      <span class="overview-kpi-icon" data-icon="cpu"></span>
+      <div><span class="overview-kpi-label">Maior uso de CPU</span><strong id="ov-cpu-critical">–</strong><small id="ov-cpu-detail">Aguardando coleta</small></div>
+    </article>
+    <article class="overview-kpi resource-kpi" data-resource-status="memory">
+      <span class="overview-kpi-icon" data-icon="memory"></span>
+      <div><span class="overview-kpi-label">Maior uso de memória</span><strong id="ov-memory-critical">–</strong><small id="ov-memory-detail">Aguardando coleta</small></div>
+    </article>
+    <article class="overview-kpi resource-kpi" data-resource-status="disk">
+      <span class="overview-kpi-icon" data-icon="disk"></span>
+      <div><span class="overview-kpi-label">Maior uso de disco</span><strong id="ov-disk-critical">–</strong><small id="ov-disk-detail">Aguardando coleta</small></div>
+    </article>
+    <article class="overview-kpi resource-kpi overview-kpi-critical" data-resource-status="down">
+      <span class="overview-kpi-icon" data-icon="serverOff"></span>
+      <div><span class="overview-kpi-label">Hosts indisponíveis</span><strong id="ov-hosts-down">–</strong><small id="ov-down-detail">Sem comunicação</small></div>
+    </article>
+  </div>
+
+  <article class="panel pressure-panel">
+    <div class="panel-title-row"><div><h2>Pressão de recursos</h2><span>Top de consumo sempre visível; avisos e críticos aparecem primeiro</span></div><span class="pressure-threshold">AVISO ≥ 70% · CRÍTICO ≥ 85%</span></div>
+    <div class="pressure-grid">
+      <section class="pressure-column"><h3><span data-icon="cpu"></span>CPU</h3><div id="ov-pressure-cpu"></div></section>
+      <section class="pressure-column"><h3><span data-icon="memory"></span>MEMÓRIA</h3><div id="ov-pressure-memory"></div></section>
+      <section class="pressure-column"><h3><span data-icon="disk"></span>DISCO</h3><div id="ov-pressure-disk"></div></section>
+      <section class="pressure-column pressure-down"><h3><span data-icon="serverOff"></span>HOSTS DOWN</h3><div id="ov-pressure-down"></div></section>
+    </div>
+  </article>
+
+  <div class="proactive-grid">
+    <article class="panel proactive-actions-panel">
+      <div class="panel-title-row"><div><h2>Ações prioritárias</h2><span>O que a operação precisa tratar agora, em ordem de impacto</span></div><span class="action-live"><i></i> PRIORIZAÇÃO AUTOMÁTICA</span></div>
+      <div id="ov-proactive-actions"></div>
+    </article>
+
+    <article class="panel operational-queue-panel">
+      <div class="panel-title-row"><div><h2>Fila operacional</h2><span>Resumo direto do trabalho pendente</span></div></div>
+      <div class="operational-queue">
+        <a href="{{ url_for('incidentes_page') }}" class="queue-action is-critical"><span data-icon="alertTriangle"></span><div><strong id="ov-queue-critical">–</strong><small>Críticos ativos</small></div><b>→</b></a>
+        <a href="{{ url_for('incidentes_page') }}" class="queue-action is-warning"><span data-icon="bell"></span><div><strong id="ov-queue-unack">–</strong><small>Não reconhecidos</small></div><b>→</b></a>
+        <a href="#capacity-risks" class="queue-action is-capacity"><span data-icon="activity"></span><div><strong id="ov-queue-capacity">–</strong><small>Riscos de capacidade</small></div><b>↓</b></a>
+        <a href="{{ url_for('firewalls_page') }}" class="queue-action is-connectivity"><span data-icon="linkOff"></span><div><strong id="ov-queue-connectivity">–</strong><small>Falhas de conectividade</small></div><b>→</b></a>
+      </div>
+    </article>
+  </div>
+
+  <div class="proactive-grid proactive-grid-lower">
+    <article class="panel capacity-risks-panel" id="capacity-risks">
+      <div class="panel-title-row"><div><h2>Riscos de capacidade</h2><span>Recursos acima de 70% que podem virar incidente</span></div><span class="capacity-counter" id="ov-capacity-counter">0 riscos</span></div>
+      <div id="ov-capacity-risks"></div>
+    </article>
+    <article class="panel unack-panel">
+      <div class="panel-title-row"><div><h2>Incidentes não reconhecidos</h2><span>Alertas ainda sem responsável operacional</span></div><a href="{{ url_for('incidentes_page') }}">Abrir fila →</a></div>
+      <div id="ov-unack-list"></div>
+    </article>
+  </div>
+</section>
+
+<script id="overview-initial-data" type="application/json">{{ initial_json | safe }}</script>
+{% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='js/overview.js') }}"></script>{% endblock %}

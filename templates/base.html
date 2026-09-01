@@ -6,22 +6,37 @@
 <title>Antigen Netviso — {% block title %}Painel{% endblock %}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 </head>
-<body>
+<body class="page-{{ active_page }}">
 <div class="shell">
   <nav class="sidebar">
     <div class="brand">
-      <span class="brand-name">ANTIGEN</span>
-      <span class="brand-name-2">NETVISO</span>
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" fill="none"><path d="M24 4 40 13v22L24 44 8 35V13L24 4Z" stroke="currentColor" stroke-width="2"/><path d="m8 13 16 10 16-10M24 23v21M8 35l16-12 16 12" stroke="currentColor" stroke-width="1.5"/><circle cx="24" cy="4" r="3" fill="currentColor"/><circle cx="8" cy="13" r="3" fill="currentColor"/><circle cx="40" cy="13" r="3" fill="currentColor"/><circle cx="8" cy="35" r="3" fill="currentColor"/><circle cx="40" cy="35" r="3" fill="currentColor"/><circle cx="24" cy="44" r="3" fill="currentColor"/><circle cx="24" cy="23" r="3" fill="currentColor"/></svg>
+      </span>
+      <span class="brand-copy">
+        <span class="brand-name">ANTIGEN</span>
+        <span class="brand-name-2">NETVISIO</span>
+      </span>
     </div>
     <ul class="nav-list">
-      <li><a href="{{ url_for('incidentes_page') }}" class="nav-link {{ 'active' if active_page == 'incidentes' }}">Incidentes</a></li>
-      <li><a href="{{ url_for('firewalls_page') }}" class="nav-link {{ 'active' if active_page == 'firewalls' }}">Firewalls Sophos</a></li>
+      <li class="nav-section">MONITORAMENTO</li>
+      <li><a href="{{ url_for('overview_page') }}" class="nav-link {{ 'active' if active_page == 'overview' }}"><span data-icon="overview"></span><span class="nav-label">Visão Geral</span></a></li>
+      <li><a href="{{ url_for('incidentes_page') }}" class="nav-link {{ 'active' if active_page == 'incidentes' }}"><span data-icon="bell"></span><span class="nav-label">Incidentes</span></a></li>
+      <li><a href="{{ url_for('recursos_page') }}" class="nav-link {{ 'active' if active_page == 'recursos' }}"><span data-icon="server"></span><span class="nav-label">Recursos</span></a></li>
+      <li><a href="{{ url_for('firewalls_page') }}" class="nav-link {{ 'active' if active_page == 'firewalls' }}"><span data-icon="shield"></span><span class="nav-label">Firewalls Sophos</span></a></li>
+      <li><span class="nav-link is-disabled"><span data-icon="monitor"></span><span class="nav-label">Hosts</span></span></li>
+      <li class="nav-section nav-section-spaced">GESTÃO</li>
+      <li><span class="nav-link is-disabled"><span data-icon="report"></span><span class="nav-label">Relatórios</span></span></li>
+      <li><span class="nav-link is-disabled"><span data-icon="settings"></span><span class="nav-label">Configurações</span></span></li>
     </ul>
     <div class="sidebar-status">
       <div><span id="conn-dot" class="dot dot-ok"></span> Zabbix conectado</div>
       <div class="server-info">Servidor: 172.16.145.102</div>
       <span id="error-msg" class="error-msg"></span>
     </div>
+    <button class="sidebar-toggle" id="sidebar-toggle" type="button" title="Recolher menu" aria-label="Recolher menu" aria-expanded="true">
+      <span data-icon="chevronLeft"></span><span class="toggle-label">Recolher</span>
+    </button>
   </nav>
 
   <main>
@@ -32,11 +47,27 @@
         <span class="page-sub">{% block page_sub %}{% endblock %}</span>
       </div>
       <div class="header-actions">
-        <span class="live-indicator"><span id="live-dot" class="dot dot-ok"></span> <span id="last-update">—</span></span>
+        <section class="operations-strip" aria-label="Resumo operacional">
+          <div class="strip-group">
+            <span class="strip-group-icon"><span data-icon="server"></span><small>HOSTS</small></span>
+            <span class="strip-count is-critical" title="Hosts indisponíveis"><strong id="bar-host-down">–</strong><small>DOWN</small></span>
+            <span class="strip-count is-warning" title="Hosts com alerta"><strong id="bar-host-alert">–</strong><small>ALERTA</small></span>
+            <span class="strip-count is-ok" title="Hosts saudáveis"><strong id="bar-host-ok">–</strong><small>OK</small></span>
+          </div>
+          <span class="strip-divider"></span>
+          <div class="strip-group">
+            <span class="strip-group-icon"><span data-icon="services"></span><small>SERVIÇOS</small></span>
+            <span class="strip-count is-critical" title="Serviços críticos"><strong id="bar-svc-critical">–</strong><small>CRÍTICO</small></span>
+            <span class="strip-count is-average" title="Serviços em severidade média"><strong id="bar-svc-average">–</strong><small>MÉDIO</small></span>
+            <span class="strip-count is-warning" title="Serviços em aviso"><strong id="bar-svc-warning">–</strong><small>AVISO</small></span>
+            <span class="strip-count is-ok" title="Itens monitorados sem problema"><strong id="bar-svc-ok">–</strong><small>OK</small></span>
+          </div>
+        </section>
         <button class="icon-btn" type="button" title="Notificações" id="notif-btn">
           <span class="icon-slot" data-icon="bell"></span>
           <span class="notif-badge" id="notif-badge" hidden>0</span>
         </button>
+        <span class="operator-avatar" title="Operador ANTIGEN">AJ</span>
       </div>
     </header>
 

@@ -9,7 +9,7 @@ import json
 
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 
-from services import firewalls, incidents
+from services import firewalls, incidents, resources
 
 app = Flask(__name__)
 
@@ -22,7 +22,15 @@ def _safe_embed_json(data: dict) -> str:
 
 @app.route("/")
 def index():
-    return redirect(url_for("incidentes_page"))
+    return redirect(url_for("overview_page"))
+
+
+@app.route("/overview")
+def overview_page():
+    data = _overview_data()
+    return render_template(
+        "overview.html", active_page="overview", initial_json=_safe_embed_json(data)
+    )
 
 
 @app.route("/incidentes")
@@ -30,6 +38,14 @@ def incidentes_page():
     data = _incidentes_data()
     return render_template(
         "incidentes.html", active_page="incidentes", initial_json=_safe_embed_json(data)
+    )
+
+
+@app.route("/recursos")
+def recursos_page():
+    data = _recursos_data()
+    return render_template(
+        "recursos.html", active_page="recursos", initial_json=_safe_embed_json(data)
     )
 
 
@@ -42,6 +58,40 @@ def firewalls_page():
 @app.route("/api/incidentes")
 def api_incidentes():
     return jsonify(_incidentes_data())
+
+
+@app.route("/api/recursos")
+def api_recursos():
+    return jsonify(_recursos_data())
+
+
+@app.route("/api/overview")
+def api_overview():
+    return jsonify(_overview_data())
+
+
+@app.route("/api/statusbar")
+def api_statusbar():
+    incident_list = incidents.get_incidents()
+    summary = incidents.get_summary(incident_list)
+    health = incidents.get_environment_health(incident_list)
+    availability = resources.get_global_availability()
+    service_problems = summary["total"]
+    return jsonify(
+        {
+            "hosts": {
+                "down": availability["down_hosts"],
+                "alert": health["hosts_with_problems"],
+                "ok": health["healthy_hosts"],
+            },
+            "services": {
+                "critical": summary["by_severity"]["disaster"] + summary["by_severity"]["high"],
+                "average": summary["by_severity"]["average"],
+                "warning": summary["by_severity"]["warning"],
+                "ok": max(0, availability["monitored_items"] - service_problems),
+            },
+        }
+    )
 
 
 @app.route("/api/firewalls")
@@ -72,6 +122,39 @@ def _incidentes_data() -> dict:
     }
 
 
+def _recursos_data() -> dict:
+    records = incidents.get_incidents()
+    resource_terms = (
+        "cpu", "memory", "memória", "memoria", "disk", "disco", "storage",
+        "filesystem", "file system", "swap", "load", "interface", "port",
+        "vpn", "ipsec", "service", "serviço", "servico", "unreachable",
+        "offline", "not running", "down",
+    )
+
+    enriched = []
+    for record in records:
+        searchable = " ".join(
+            [record.get("name", ""), record.get("host_name", ""), *(record.get("tags") or [])]
+        ).lower()
+        enriched.append(
+            {
+                **record,
+                "is_resource_problem": any(term in searchable for term in resource_terms),
+            }
+        )
+
+    return {
+        "resources": enriched,
+        "groups": sorted({row["group_name"] for row in enriched if row["group_name"] != "—"}),
+        "summary": {
+            "total": len(enriched),
+            "unhandled": sum(not row["acknowledged"] for row in enriched),
+            "resource_problems": sum(row["is_resource_problem"] for row in enriched),
+            "critical": sum(row["severity"] >= 4 for row in enriched),
+        },
+    }
+
+
 def _firewalls_data() -> dict:
     hosts = firewalls.get_hosts()
     fleet = firewalls.get_fleet(hosts)
@@ -80,6 +163,38 @@ def _firewalls_data() -> dict:
         "summary": firewalls.get_summary(fleet),
         "sslvpn_sessions": firewalls.get_sslvpn_sessions(hosts),
         "problems": firewalls.get_firewall_problems(hosts),
+    }
+
+
+def _overview_data() -> dict:
+    incident_list = incidents.get_incidents()
+    incident_summary = incidents.get_summary(incident_list)
+    health = incidents.get_environment_health(incident_list)
+    hosts = firewalls.get_hosts()
+    fleet = firewalls.get_fleet(hosts)
+    firewall_summary = firewalls.get_summary(fleet)
+
+    group_counts = {}
+    for incident in incident_list:
+        group = incident.get("group_name") or "—"
+        group_counts[group] = group_counts.get(group, 0) + 1
+
+    critical = sorted(
+        [incident for incident in incident_list if incident["severity"] >= 4],
+        key=lambda incident: (-incident["severity"], int(incident["clock"])),
+    )[:6]
+
+    return {
+        "incidents": incident_list,
+        "summary": incident_summary,
+        "health": health,
+        "firewalls": firewall_summary,
+        "critical": critical,
+        "top_groups": [
+            {"name": name, "count": count}
+            for name, count in sorted(group_counts.items(), key=lambda item: (-item[1], item[0]))[:5]
+        ],
+        "resources": resources.get_resource_pressure(),
     }
 
 

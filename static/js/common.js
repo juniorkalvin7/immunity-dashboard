@@ -92,7 +92,52 @@ function startPolling(loadAndRender) {
   setInterval(tick, REFRESH_MS);
 }
 
+async function refreshStatusBar() {
+  if (!document.querySelector(".operations-strip")) return;
+  try {
+    const data = await fetchJson("/api/statusbar");
+    const values = {
+      "bar-host-down": data.hosts.down,
+      "bar-host-alert": data.hosts.alert,
+      "bar-host-ok": data.hosts.ok,
+      "bar-svc-critical": data.services.critical,
+      "bar-svc-average": data.services.average,
+      "bar-svc-warning": data.services.warning,
+      "bar-svc-ok": data.services.ok,
+    };
+    Object.entries(values).forEach(([id, value]) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = Number(value).toLocaleString("pt-BR");
+    });
+  } catch (_) {
+    // The page's normal connection indicator reports API failures.
+  }
+}
+
+function setupSidebarToggle() {
+  const button = document.getElementById("sidebar-toggle");
+  if (!button) return;
+  const storageKey = "antigen.sidebar.collapsed";
+
+  function apply(collapsed) {
+    document.body.classList.toggle("sidebar-collapsed", collapsed);
+    button.setAttribute("aria-expanded", String(!collapsed));
+    button.setAttribute("aria-label", collapsed ? "Expandir menu" : "Recolher menu");
+    button.title = collapsed ? "Expandir menu" : "Recolher menu";
+  }
+
+  apply(localStorage.getItem(storageKey) === "1");
+  button.addEventListener("click", () => {
+    const collapsed = !document.body.classList.contains("sidebar-collapsed");
+    apply(collapsed);
+    localStorage.setItem(storageKey, collapsed ? "1" : "0");
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   hydrateByteCells();
   hydrateIcons();
+  setupSidebarToggle();
+  refreshStatusBar();
+  setInterval(refreshStatusBar, REFRESH_MS);
 });

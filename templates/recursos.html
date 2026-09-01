@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Recursos{% endblock %}
+{% block breadcrumb_current %}Recursos{% endblock %}
+{% block page_title %}Recursos{% endblock %}
+{% block page_sub %}Monitoramento operacional de hosts, serviços e recursos{% endblock %}
+
+{% block content %}
+<section class="page resources-page" id="page-resources">
+  <div class="resource-summary">
+    <div><span data-icon="server"></span><strong id="res-total">–</strong><small>Problemas ativos</small></div>
+    <div class="is-warning"><span data-icon="bell"></span><strong id="res-unhandled">–</strong><small>Não tratados</small></div>
+    <div class="is-capacity"><span data-icon="activity"></span><strong id="res-resource">–</strong><small>De recursos</small></div>
+    <div class="is-critical"><span data-icon="alertTriangle"></span><strong id="res-critical">–</strong><small>Alta prioridade</small></div>
+  </div>
+
+  <article class="panel resource-monitor-panel">
+    <div class="resource-view-tabs" id="resource-view-tabs">
+      <button class="is-active" data-view="all"><span data-icon="layers"></span>Todos</button>
+      <button data-view="unhandled"><span data-icon="bell"></span>Problemas não tratados <b id="tab-unhandled">0</b></button>
+      <button data-view="resource"><span data-icon="activity"></span>Problemas de recursos <b id="tab-resource">0</b></button>
+    </div>
+
+    <div class="resource-toolbar">
+      <label class="resource-search"><span data-icon="search"></span><input id="res-search" type="search" placeholder="Buscar host, problema ou tag"></label>
+      <select id="res-group"><option value="">Todos os grupos</option></select>
+      <select id="res-severity">
+        <option value="">Todas as severidades</option><option value="5">Disaster</option><option value="4">High</option><option value="3">Average</option><option value="2">Warning</option><option value="1">Information</option>
+      </select>
+      <span class="resource-results" id="res-results">0 resultados</span>
+    </div>
+
+    <div class="resource-table-wrap">
+      <table class="resource-table" id="resource-table">
+        <thead><tr><th data-sort="severity">Status</th><th data-sort="host_name">Host</th><th data-sort="group_name">Grupo</th><th>Recurso</th><th data-sort="name">Informação</th><th data-sort="clock">Duração</th><th data-sort="acknowledged">Tratamento</th><th>Ação</th></tr></thead>
+        <tbody id="resource-rows"><tr><td colspan="8" class="loading">Carregando recursos…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="resource-pagination" id="resource-pagination"></div>
+  </article>
+</section>
+<script id="recursos-initial-data" type="application/json">{{ initial_json | safe }}</script>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/recursos.js') }}"></script>{% endblock %}
