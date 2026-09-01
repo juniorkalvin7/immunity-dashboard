@@ -2,9 +2,9 @@
   --bg: #0c0f12;
   --panel: #14181d;
   --border: #262c33;
-  --text: #d7dce1;
-  --text-dim: #7b8794;
-  --text-faint: #4c5561;
+  --text: #edf4f8;
+  --text-dim: #a7b6c2;
+  --text-faint: #718695;
   --accent: #4a9eff;
   --ok: #3ecf6e;
   --warn: #e8a13d;
@@ -20,6 +20,24 @@
   --sev-not-classified: #6b7684;
   --mono: "SF Mono", "Consolas", "Liberation Mono", monospace;
   --sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+html { color-scheme: dark; }
+html[data-theme="light"] {
+  color-scheme: light;
+  --bg: #eef3f7;
+  --panel: #ffffff;
+  --border: #cbd7df;
+  --border-soft: #dce5eb;
+  --text: #172733;
+  --text-dim: #4e6575;
+  --text-faint: #718493;
+  --accent: #087fb0;
+  --ok: #16894a;
+  --warn: #b86b00;
+  --bad: #d93640;
+  --sev-information: #087fb0;
+  --sev-not-classified: #687987;
 }
 
 * { box-sizing: border-box; }
@@ -1133,6 +1151,36 @@ tbody td { padding: 9px 12px; }
 tbody tr:hover td { background: rgba(24, 183, 241, .035); }
 .ack-btn { border-color: rgba(24, 183, 241, .45); border-radius: 4px; }
 .pagination { padding: 12px 16px 2px; }
+
+/* ================= synchronized light theme ================= */
+html[data-theme="light"] body { background: #eef3f7; }
+html[data-theme="light"] .sidebar { background: #f8fbfd; box-shadow: 8px 0 24px rgba(30,60,80,.05); }
+html[data-theme="light"] main { background: #eef3f7; }
+html[data-theme="light"] .brand-mark, html[data-theme="light"] .nav-link.active, html[data-theme="light"] .breadcrumb, html[data-theme="light"] .panel-title-row>a { color: #087fb0; }
+html[data-theme="light"] .nav-link:hover { background: rgba(8,127,176,.06); }
+html[data-theme="light"] .nav-link.active { background: rgba(8,127,176,.1); }
+html[data-theme="light"] .panel, html[data-theme="light"] .stat-card, html[data-theme="light"] .overview-kpi, html[data-theme="light"] .pressure-panel, html[data-theme="light"] .pressure-column, html[data-theme="light"] .resource-monitor-panel, html[data-theme="light"] .resource-summary>div, html[data-theme="light"] .network-metric, html[data-theme="light"] .queue-action, html[data-theme="light"] .detail-grid>div { background: #fff; box-shadow: 0 2px 10px rgba(42,65,81,.045); }
+html[data-theme="light"] .resource-summary>div { background: linear-gradient(145deg,#fff,#f8fbfd); }
+html[data-theme="light"] .resource-view-tabs, html[data-theme="light"] .resource-toolbar, html[data-theme="light"] thead, html[data-theme="light"] .filter-bar { background: #f6f9fb; }
+html[data-theme="light"] tbody tr:nth-child(even) td { background: rgba(228,237,243,.35); }
+html[data-theme="light"] tbody tr:hover td, html[data-theme="light"] .resource-row.is-selected td { background: rgba(8,127,176,.09); }
+html[data-theme="light"] .resource-search input, html[data-theme="light"] .resource-toolbar select, html[data-theme="light"] #filter-search, html[data-theme="light"] #filter-group, html[data-theme="light"] .resource-pagination button, html[data-theme="light"] .resource-pagination select, html[data-theme="light"] .page-size-select { color: var(--text); border-color: #bdccd6; background: #fff; }
+html[data-theme="light"] .operations-strip { background: rgba(255,255,255,.7); }
+html[data-theme="light"] .strip-divider { background: #ccd8e0; }
+html[data-theme="light"] .icon-btn, html[data-theme="light"] .operator-avatar { color: #425d6e; border-color: #bdccd6; background: #fff; }
+html[data-theme="light"] .theme-toggle { color: #087fb0; }
+html[data-theme="light"] .segment-bar i { background: #dce6ec; }
+html[data-theme="light"] .resource-bulkbar { background: #e5f5fb; }
+html[data-theme="light"] .resource-bulkbar button, html[data-theme="light"] .drawer-actions button, html[data-theme="light"] .graph-toolbar button { color: #087fb0; border-color: #9fc3d3; background: #fff; }
+html[data-theme="light"] .resource-drawer { color: var(--text); border-color: #b8c9d4; background: #f8fbfd; box-shadow: -18px 0 50px rgba(30,55,70,.2); }
+html[data-theme="light"] .resource-drawer-backdrop { background: rgba(28,49,62,.28); }
+html[data-theme="light"] .resource-drawer canvas { border-color: #cbd7df; background: #fff; }
+html[data-theme="light"] .resource-dialog { color: var(--text); border-color: #b8c9d4; background: #fff; }
+html[data-theme="light"] .resource-dialog textarea, html[data-theme="light"] .resource-dialog input, html[data-theme="light"] .resource-dialog select { color: var(--text); border-color: #bdccd6; background: #f8fbfd; }
+html[data-theme="light"] .health-gauge::before { background: #fff; }
+html[data-theme="light"] .severity-stack, html[data-theme="light"] .overview-group-row div>span { background: #dbe5eb; }
+html[data-theme="light"] .tag-pill { color: #405969; background: #e6edf2; }
+html[data-theme="light"] .mono-dim, html[data-theme="light"] .resource-group, html[data-theme="light"] .resource-info, html[data-theme="light"] .pressure-host { color: #4e6575; }
 
 @media (max-width: 1450px) {
   .stat-card { padding: 12px; gap: 9px; }
