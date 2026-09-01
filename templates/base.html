@@ -20,7 +20,7 @@
     </div>
     <ul class="nav-list">
       <li class="nav-section">MONITORAMENTO</li>
-      <li><span class="nav-link is-disabled"><span data-icon="overview"></span>Visão Geral</span></li>
+      <li><a href="{{ url_for('overview_page') }}" class="nav-link {{ 'active' if active_page == 'overview' }}"><span data-icon="overview"></span>Visão Geral</a></li>
       <li><a href="{{ url_for('incidentes_page') }}" class="nav-link {{ 'active' if active_page == 'incidentes' }}"><span data-icon="bell"></span>Incidentes</a></li>
       <li><span class="nav-link is-disabled"><span data-icon="server"></span>Infraestrutura</span></li>
       <li><a href="{{ url_for('firewalls_page') }}" class="nav-link {{ 'active' if active_page == 'firewalls' }}"><span data-icon="shield"></span>Firewalls Sophos</a></li>
