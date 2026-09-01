@@ -1,123 +1,53 @@
-let resourceData = [];
-let resourceGroups = [];
-let resourceView = "all";
-let resourcePage = 1;
-let resourcePageSize = 30;
-let resourceSort = { key: "severity", dir: "desc" };
-const resourceFilters = { search: "", group: "", severity: "" };
+let resourceData=[],resourceGroups=[],resourceView="all",resourcePage=1,resourcePageSize=30;
+let resourceSort={key:"severity",dir:"desc"},activeResource=null,activeDetails=null,activeDrawerTab="details";
+const selectedResources=new Set(),resourceFilters={search:"",group:"",severity:""};
 
-function loadResourcesInitial() {
-  const el = document.getElementById("recursos-initial-data");
-  try { return el ? JSON.parse(el.textContent) : null; } catch (_) { return null; }
+function loadResourcesInitial(){const el=document.getElementById("recursos-initial-data");try{return el?JSON.parse(el.textContent):null}catch(_){return null}}
+function resourceKind(row){const text=`${row.name} ${(row.tags||[]).join(" ")}`.toLowerCase();if(/cpu|load/.test(text))return["CPU","cpu"];if(/memory|memória|memoria|swap/.test(text))return["Memória","memory"];if(/disk|disco|storage|filesystem|file system/.test(text))return["Disco","disk"];if(/vpn|ipsec/.test(text))return["VPN","link"];if(/interface|port|network|rede|unreachable|offline|down/.test(text))return["Disponibilidade","serverOff"];if(/service|serviço|servico|not running/.test(text))return["Serviço","settings"];return["Monitor","activity"]}
+
+function applyResources(data){
+  resourceData=data.resources||[];resourceGroups=data.groups||[];
+  [["res-total","total"],["res-unhandled","unhandled"],["res-resource","resource_problems"],["res-critical","critical"],["tab-unhandled","unhandled"],["tab-resource","resource_problems"]].forEach(([id,key])=>document.getElementById(id).textContent=data.summary[key]);
+  const group=document.getElementById("res-group"),selected=group.value;
+  group.innerHTML='<option value="">Todos os grupos</option>'+resourceGroups.map(name=>`<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
+  if(resourceGroups.includes(selected))group.value=selected;renderResources();
 }
+function filteredResources(){const query=resourceFilters.search.toLowerCase().trim();return resourceData.filter(row=>!(resourceView==="unhandled"&&row.acknowledged)&&!(resourceView==="resource"&&!row.is_resource_problem)&&(!resourceFilters.group||row.group_name===resourceFilters.group)&&(!resourceFilters.severity||String(row.severity)===resourceFilters.severity)&&(!query||`${row.host_name} ${row.group_name} ${row.name} ${(row.tags||[]).join(" ")}`.toLowerCase().includes(query)))}
+function sortedResources(rows){const direction=resourceSort.dir==="asc"?1:-1;return[...rows].sort((a,b)=>{let left=a[resourceSort.key],right=b[resourceSort.key];if(["clock","severity"].includes(resourceSort.key)){left=Number(left);right=Number(right)}if(resourceSort.key==="acknowledged"){left=left?1:0;right=right?1:0}return typeof left==="string"?left.localeCompare(right)*direction:(left-right)*direction})}
+function currentPageRows(){return sortedResources(filteredResources()).slice((resourcePage-1)*resourcePageSize,resourcePage*resourcePageSize)}
 
-function resourceKind(row) {
-  const text = `${row.name} ${(row.tags || []).join(" ")}`.toLowerCase();
-  if (/cpu|load/.test(text)) return ["CPU", "cpu"];
-  if (/memory|memória|memoria|swap/.test(text)) return ["Memória", "memory"];
-  if (/disk|disco|storage|filesystem|file system/.test(text)) return ["Disco", "disk"];
-  if (/vpn|ipsec/.test(text)) return ["VPN", "link"];
-  if (/interface|port|network|rede|unreachable|offline|down/.test(text)) return ["Disponibilidade", "serverOff"];
-  if (/service|serviço|servico|not running/.test(text)) return ["Serviço", "settings"];
-  return ["Monitor", "activity"];
+function renderResources(){
+  const filtered=filteredResources(),sorted=sortedResources(filtered),pages=Math.max(1,Math.ceil(sorted.length/resourcePageSize));resourcePage=Math.min(resourcePage,pages);const rows=sorted.slice((resourcePage-1)*resourcePageSize,resourcePage*resourcePageSize);
+  document.getElementById("res-results").textContent=`${filtered.length} resultado${filtered.length===1?"":"s"}`;const body=document.getElementById("resource-rows");
+  body.innerHTML=rows.length?rows.map(row=>{const[kind,icon]=resourceKind(row);return`<tr class="resource-row sev-row-${row.severity_name} ${selectedResources.has(row.eventid)?"is-selected":""}" data-eventid="${row.eventid}"><td class="resource-check-col"><input class="resource-check" type="checkbox" aria-label="Selecionar ${escapeHtml(row.host_name)}" ${selectedResources.has(row.eventid)?"checked":""}></td><td><span class="sev-solid sev-solid-${row.severity_name}">${escapeHtml(row.severity_name)}</span></td><td><strong class="resource-host" title="${escapeHtml(row.host_name)}">${escapeHtml(row.host_name)}</strong></td><td><span class="resource-group" title="${escapeHtml(row.group_name)}">${escapeHtml(row.group_name)}</span></td><td><span class="resource-kind"><i data-icon="${icon}"></i>${kind}</span></td><td><span class="resource-info" title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</span></td><td><span class="duration-cell">${ICONS.clock}${escapeHtml(row.duration)}</span></td><td>${row.acknowledged?'<span class="status-chip status-ok">'+ICONS.checkCircle+'Reconhecido</span>':'<span class="status-chip status-new">'+ICONS.circle+'Não tratado</span>'}</td><td><button class="resource-open" type="button" aria-label="Abrir detalhes">→</button></td></tr>`}).join(""):'<tr><td colspan="9" class="empty">Nenhum recurso encontrado nesta visão</td></tr>';
+  hydrateIcons(body);body.querySelectorAll(".resource-row").forEach(row=>{row.onclick=e=>{if(!e.target.closest("input,button"))openResourceDrawer(row.dataset.eventid)};row.querySelector(".resource-open").onclick=()=>openResourceDrawer(row.dataset.eventid);row.querySelector(".resource-check").onchange=e=>toggleSelection(row.dataset.eventid,e.target.checked)});updateBulkBar();renderResourcePagination(filtered.length,pages);
 }
+function renderResourcePagination(total,pages){const start=total?(resourcePage-1)*resourcePageSize+1:0,end=Math.min(resourcePage*resourcePageSize,total);document.getElementById("resource-pagination").innerHTML=`<span>${start}–${end} de ${total}</span><div><button id="res-prev" ${resourcePage===1?"disabled":""}>←</button><strong>${resourcePage} / ${pages}</strong><button id="res-next" ${resourcePage===pages?"disabled":""}>→</button><select id="res-page-size"><option ${resourcePageSize===15?"selected":""}>15</option><option ${resourcePageSize===30?"selected":""}>30</option><option ${resourcePageSize===50?"selected":""}>50</option></select></div>`;document.getElementById("res-prev").onclick=()=>{resourcePage--;renderResources()};document.getElementById("res-next").onclick=()=>{resourcePage++;renderResources()};document.getElementById("res-page-size").onchange=e=>{resourcePageSize=Number(e.target.value);resourcePage=1;renderResources()}}
+function toggleSelection(eventid,checked){checked?selectedResources.add(eventid):selectedResources.delete(eventid);renderResources()}
+function updateBulkBar(){const bar=document.getElementById("resource-bulkbar");bar.hidden=selectedResources.size===0;document.getElementById("res-selected-count").textContent=selectedResources.size;const ids=currentPageRows().map(row=>row.eventid);document.getElementById("res-select-all").checked=ids.length>0&&ids.every(id=>selectedResources.has(id))}
 
-function applyResources(data) {
-  resourceData = data.resources || [];
-  resourceGroups = data.groups || [];
-  document.getElementById("res-total").textContent = data.summary.total;
-  document.getElementById("res-unhandled").textContent = data.summary.unhandled;
-  document.getElementById("res-resource").textContent = data.summary.resource_problems;
-  document.getElementById("res-critical").textContent = data.summary.critical;
-  document.getElementById("tab-unhandled").textContent = data.summary.unhandled;
-  document.getElementById("tab-resource").textContent = data.summary.resource_problems;
-  const group = document.getElementById("res-group");
-  const selected = group.value;
-  group.innerHTML = '<option value="">Todos os grupos</option>' + resourceGroups.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
-  if (resourceGroups.includes(selected)) group.value = selected;
-  renderResources();
+async function openResourceDrawer(eventid,hours=24){
+  activeResource=resourceData.find(row=>row.eventid===eventid);if(!activeResource)return;document.getElementById("resource-drawer-backdrop").hidden=false;const drawer=document.getElementById("resource-drawer");drawer.classList.add("is-open");drawer.setAttribute("aria-hidden","false");document.getElementById("drawer-title").textContent=activeResource.name;document.getElementById("drawer-host").textContent=`${activeResource.host_name} · ${activeResource.group_name}`;const severity=document.getElementById("drawer-severity");severity.className=`sev-solid sev-solid-${activeResource.severity_name}`;severity.textContent=activeResource.severity_name;document.getElementById("drawer-body").innerHTML='<div class="drawer-loading">Carregando dados do Zabbix…</div>';
+  try{activeDetails=await fetchJson(`/api/recursos/${eventid}/details?hours=${hours}`);renderDrawerTab()}catch(error){document.getElementById("drawer-body").innerHTML=`<div class="drawer-error">${escapeHtml(error.message)}</div>`}
 }
-
-function filteredResources() {
-  const query = resourceFilters.search.toLowerCase().trim();
-  return resourceData.filter((row) => {
-    if (resourceView === "unhandled" && row.acknowledged) return false;
-    if (resourceView === "resource" && !row.is_resource_problem) return false;
-    if (resourceFilters.group && row.group_name !== resourceFilters.group) return false;
-    if (resourceFilters.severity && String(row.severity) !== resourceFilters.severity) return false;
-    if (query && !`${row.host_name} ${row.group_name} ${row.name} ${(row.tags || []).join(" ")}`.toLowerCase().includes(query)) return false;
-    return true;
-  });
+function closeResourceDrawer(){document.getElementById("resource-drawer").classList.remove("is-open");document.getElementById("resource-drawer").setAttribute("aria-hidden","true");document.getElementById("resource-drawer-backdrop").hidden=true}
+function formatClock(clock){return new Date(Number(clock)*1000).toLocaleString("pt-BR")}
+function renderDrawerTab(){
+  if(!activeDetails)return;const body=document.getElementById("drawer-body");
+  if(activeDrawerTab==="details"){const item=activeDetails.item;body.innerHTML=`<div class="drawer-actions"><button id="drawer-ack" ${activeDetails.acknowledged?"disabled":""}>${activeDetails.acknowledged?"Reconhecido":"Reconhecer"}</button><button id="drawer-maintenance">Programar manutenção</button></div><dl class="detail-grid"><div><dt>Host</dt><dd>${escapeHtml(activeDetails.host_name)}</dd></div><div><dt>Duração</dt><dd>${escapeHtml(activeDetails.duration)}</dd></div><div><dt>Valor atual</dt><dd>${item?escapeHtml(`${item.lastvalue} ${item.units||""}`):"Sem item associado"}</dd></div><div><dt>Item</dt><dd>${item?escapeHtml(item.name):"—"}</dd></div><div class="is-wide"><dt>Chave do item</dt><dd class="mono">${item?escapeHtml(item.key):"—"}</dd></div><div class="is-wide"><dt>Expressão da trigger</dt><dd class="mono">${escapeHtml(activeDetails.trigger.expression)}</dd></div><div class="is-wide"><dt>Descrição operacional</dt><dd>${escapeHtml(activeDetails.trigger.operational_data||activeDetails.trigger.comments||"Sem descrição cadastrada")}</dd></div></dl>`;document.getElementById("drawer-ack").onclick=()=>openAckDialog([activeDetails.eventid]);document.getElementById("drawer-maintenance").onclick=()=>openMaintenanceDialog([activeDetails.hostid])
+  }else if(activeDrawerTab==="timeline"){body.innerHTML=`<div class="timeline-list">${activeDetails.timeline.map(entry=>`<article><i class="${entry.type}"></i><div><strong>${escapeHtml(entry.message)}</strong><span>${escapeHtml(entry.user)} · ${formatClock(entry.clock)}</span></div></article>`).join("")||'<div class="drawer-empty">Nenhum evento no histórico</div>'}</div>`
+  }else{body.innerHTML=`<div class="graph-toolbar"><button data-hours="24">24 horas</button><button data-hours="168">7 dias</button><button data-hours="744">31 dias</button></div><div class="graph-meta"><strong>${activeDetails.item?escapeHtml(activeDetails.item.name):"Sem série numérica associada"}</strong><span>${activeDetails.history.length} pontos</span></div><canvas id="resource-chart"></canvas><div class="graph-range" id="graph-range"></div>`;body.querySelectorAll("[data-hours]").forEach(button=>button.onclick=()=>openResourceDrawer(activeDetails.eventid,button.dataset.hours));drawResourceChart(activeDetails.history,activeDetails.item?.units||"")}
 }
+function drawResourceChart(points,units){const canvas=document.getElementById("resource-chart");if(!canvas||points.length<2){if(canvas)canvas.outerHTML='<div class="drawer-empty">Ainda não há histórico numérico para este recurso</div>';return}const ratio=window.devicePixelRatio||1,width=canvas.clientWidth||560,height=250;canvas.width=width*ratio;canvas.height=height*ratio;const ctx=canvas.getContext("2d");ctx.scale(ratio,ratio);const values=points.map(p=>p.value),min=Math.min(...values),max=Math.max(...values),span=max-min||1,pad=28;ctx.strokeStyle="#203746";ctx.lineWidth=1;for(let i=0;i<5;i++){const y=pad+(height-pad*2)*i/4;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(width-pad,y);ctx.stroke()}ctx.strokeStyle="#18b7f1";ctx.lineWidth=2;ctx.beginPath();points.forEach((p,i)=>{const x=pad+(width-pad*2)*i/(points.length-1),y=height-pad-(p.value-min)/span*(height-pad*2);i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();ctx.fillStyle="#8ea2b2";ctx.font="10px monospace";ctx.fillText(`${max.toFixed(1)}${units}`,2,14);ctx.fillText(`${min.toFixed(1)}${units}`,2,height-5);document.getElementById("graph-range").textContent=`${formatClock(points[0].clock)} — ${formatClock(points[points.length-1].clock)}`}
 
-function sortedResources(rows) {
-  const direction = resourceSort.dir === "asc" ? 1 : -1;
-  return [...rows].sort((a, b) => {
-    let left = a[resourceSort.key], right = b[resourceSort.key];
-    if (resourceSort.key === "clock" || resourceSort.key === "severity") { left = Number(left); right = Number(right); }
-    if (resourceSort.key === "acknowledged") { left = left ? 1 : 0; right = right ? 1 : 0; }
-    return typeof left === "string" ? left.localeCompare(right) * direction : (left - right) * direction;
-  });
-}
+function openAckDialog(ids){const dialog=document.getElementById("ack-dialog");dialog.dataset.ids=ids.join(",");dialog.showModal()}
+function openMaintenanceDialog(ids){const dialog=document.getElementById("maintenance-dialog");dialog.dataset.hostids=ids.filter(Boolean).join(",");dialog.showModal()}
+async function postJson(url,payload){const response=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)}),body=await response.json();if(!response.ok||body.ok===false)throw new Error(body.error||"Falha na operação");return body}
 
-function renderResources() {
-  const filtered = filteredResources();
-  const sorted = sortedResources(filtered);
-  const totalPages = Math.max(1, Math.ceil(sorted.length / resourcePageSize));
-  resourcePage = Math.min(resourcePage, totalPages);
-  const start = (resourcePage - 1) * resourcePageSize;
-  const rows = sorted.slice(start, start + resourcePageSize);
-  document.getElementById("res-results").textContent = `${filtered.length} resultado${filtered.length === 1 ? "" : "s"}`;
-  const body = document.getElementById("resource-rows");
-  body.innerHTML = rows.length ? rows.map((row) => {
-    const [kind, icon] = resourceKind(row);
-    return `<tr class="resource-row sev-row-${row.severity_name}">
-      <td><span class="sev-solid sev-solid-${row.severity_name}">${escapeHtml(row.severity_name)}</span></td>
-      <td><strong class="resource-host" title="${escapeHtml(row.host_name)}">${escapeHtml(row.host_name)}</strong></td>
-      <td><span class="resource-group" title="${escapeHtml(row.group_name)}">${escapeHtml(row.group_name)}</span></td>
-      <td><span class="resource-kind"><i data-icon="${icon}"></i>${kind}</span></td>
-      <td><span class="resource-info" title="${escapeHtml(row.name)}">${escapeHtml(row.name)}</span></td>
-      <td><span class="duration-cell">${ICONS.clock}${escapeHtml(row.duration)}</span></td>
-      <td>${row.acknowledged ? '<span class="status-chip status-ok">'+ICONS.checkCircle+'Reconhecido</span>' : '<span class="status-chip status-new">'+ICONS.circle+'Não tratado</span>'}</td>
-      <td>${row.acknowledged ? "—" : `<button class="ack-btn" data-eventid="${row.eventid}">Reconhecer</button>`}</td>
-    </tr>`;
-  }).join("") : '<tr><td colspan="8" class="empty">Nenhum recurso encontrado nesta visão</td></tr>';
-  hydrateIcons(body);
-  body.querySelectorAll(".ack-btn").forEach((button) => button.addEventListener("click", acknowledgeResource));
-  renderResourcePagination(filtered.length, totalPages);
-}
-
-function renderResourcePagination(total, pages) {
-  const start = total ? (resourcePage - 1) * resourcePageSize + 1 : 0;
-  const end = Math.min(resourcePage * resourcePageSize, total);
-  document.getElementById("resource-pagination").innerHTML = `<span>${start}–${end} de ${total}</span><div><button id="res-prev" ${resourcePage === 1 ? "disabled" : ""}>←</button><strong>${resourcePage} / ${pages}</strong><button id="res-next" ${resourcePage === pages ? "disabled" : ""}>→</button><select id="res-page-size"><option ${resourcePageSize===15?"selected":""}>15</option><option ${resourcePageSize===30?"selected":""}>30</option><option ${resourcePageSize===50?"selected":""}>50</option></select></div>`;
-  document.getElementById("res-prev").onclick = () => { resourcePage--; renderResources(); };
-  document.getElementById("res-next").onclick = () => { resourcePage++; renderResources(); };
-  document.getElementById("res-page-size").onchange = (event) => { resourcePageSize = Number(event.target.value); resourcePage = 1; renderResources(); };
-}
-
-async function acknowledgeResource(event) {
-  const button = event.currentTarget;
-  button.disabled = true;
-  try {
-    const response = await fetch(`/api/incidentes/${button.dataset.eventid}/ack`, { method: "POST" });
-    if (!response.ok) throw new Error("Falha ao reconhecer");
-    const row = resourceData.find((item) => item.eventid === button.dataset.eventid);
-    if (row) row.acknowledged = true;
-    renderResources();
-  } catch (error) { button.disabled = false; setConnStatus(false, error.message); }
-}
-
-document.querySelectorAll("#resource-view-tabs button").forEach((button) => button.addEventListener("click", () => {
-  resourceView = button.dataset.view; resourcePage = 1;
-  document.querySelectorAll("#resource-view-tabs button").forEach((item) => item.classList.toggle("is-active", item === button));
-  renderResources();
-}));
-document.getElementById("res-search").addEventListener("input", (event) => { resourceFilters.search = event.target.value; resourcePage = 1; renderResources(); });
-document.getElementById("res-group").addEventListener("change", (event) => { resourceFilters.group = event.target.value; resourcePage = 1; renderResources(); });
-document.getElementById("res-severity").addEventListener("change", (event) => { resourceFilters.severity = event.target.value; resourcePage = 1; renderResources(); });
-document.querySelectorAll("#resource-table th[data-sort]").forEach((header) => header.addEventListener("click", () => { const key = header.dataset.sort; resourceSort = resourceSort.key === key ? { key, dir: resourceSort.dir === "asc" ? "desc" : "asc" } : { key, dir: "asc" }; renderResources(); }));
-
-const resourcesInitial = loadResourcesInitial();
-if (resourcesInitial) applyResources(resourcesInitial);
-startPolling(async () => applyResources(await fetchJson("/api/recursos")));
+document.getElementById("ack-confirm").onclick=async e=>{e.preventDefault();const dialog=document.getElementById("ack-dialog");try{await postJson("/api/recursos/ack",{eventids:dialog.dataset.ids.split(","),message:document.getElementById("ack-message").value});dialog.close();selectedResources.clear();applyResources(await fetchJson("/api/recursos"));if(activeResource)openResourceDrawer(activeResource.eventid)}catch(error){setConnStatus(false,error.message)}};
+document.getElementById("maintenance-confirm").onclick=async e=>{e.preventDefault();const dialog=document.getElementById("maintenance-dialog");try{await postJson("/api/recursos/maintenance",{hostids:dialog.dataset.hostids.split(","),minutes:Number(document.getElementById("maintenance-minutes").value),name:document.getElementById("maintenance-name").value,description:document.getElementById("maintenance-description").value});dialog.close();selectedResources.clear();renderResources()}catch(error){setConnStatus(false,error.message)}};
+document.querySelectorAll("#resource-view-tabs button").forEach(button=>button.onclick=()=>{resourceView=button.dataset.view;resourcePage=1;document.querySelectorAll("#resource-view-tabs button").forEach(item=>item.classList.toggle("is-active",item===button));renderResources()});
+document.getElementById("res-search").oninput=e=>{resourceFilters.search=e.target.value;resourcePage=1;renderResources()};document.getElementById("res-group").onchange=e=>{resourceFilters.group=e.target.value;resourcePage=1;renderResources()};document.getElementById("res-severity").onchange=e=>{resourceFilters.severity=e.target.value;resourcePage=1;renderResources()};
+document.getElementById("res-select-all").onchange=e=>{currentPageRows().forEach(row=>e.target.checked?selectedResources.add(row.eventid):selectedResources.delete(row.eventid));renderResources()};document.getElementById("res-clear-selection").onclick=()=>{selectedResources.clear();renderResources()};document.getElementById("res-bulk-ack").onclick=()=>openAckDialog([...selectedResources]);document.getElementById("res-bulk-maintenance").onclick=()=>openMaintenanceDialog(resourceData.filter(row=>selectedResources.has(row.eventid)).map(row=>row.hostid));
+document.getElementById("drawer-close").onclick=closeResourceDrawer;document.getElementById("resource-drawer-backdrop").onclick=closeResourceDrawer;document.querySelectorAll("[data-drawer-tab]").forEach(button=>button.onclick=()=>{activeDrawerTab=button.dataset.drawerTab;document.querySelectorAll("[data-drawer-tab]").forEach(item=>item.classList.toggle("is-active",item===button));renderDrawerTab()});document.querySelectorAll("#resource-table th[data-sort]").forEach(header=>header.onclick=()=>{const key=header.dataset.sort;resourceSort=resourceSort.key===key?{key,dir:resourceSort.dir==="asc"?"desc":"asc"}:{key,dir:"asc"};renderResources()});
+const resourcesInitial=loadResourcesInitial();if(resourcesInitial)applyResources(resourcesInitial);startPolling(async()=>applyResources(await fetchJson("/api/recursos")));

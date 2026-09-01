@@ -21,6 +21,7 @@
     </div>
 
     <div class="resource-toolbar">
+      <label class="resource-select-all"><input id="res-select-all" type="checkbox"><span>Selecionar página</span></label>
       <label class="resource-search"><span data-icon="search"></span><input id="res-search" type="search" placeholder="Buscar host, problema ou tag"></label>
       <select id="res-group"><option value="">Todos os grupos</option></select>
       <select id="res-severity">
@@ -29,15 +30,43 @@
       <span class="resource-results" id="res-results">0 resultados</span>
     </div>
 
+    <div class="resource-bulkbar" id="resource-bulkbar" hidden>
+      <strong><span id="res-selected-count">0</span> selecionados</strong>
+      <button id="res-bulk-ack" type="button"><span data-icon="checkCircle"></span>Reconhecer</button>
+      <button id="res-bulk-maintenance" type="button"><span data-icon="clock"></span>Programar manutenção</button>
+      <button id="res-clear-selection" class="is-quiet" type="button">Limpar seleção</button>
+    </div>
+
     <div class="resource-table-wrap">
       <table class="resource-table" id="resource-table">
-        <thead><tr><th data-sort="severity">Status</th><th data-sort="host_name">Host</th><th data-sort="group_name">Grupo</th><th>Recurso</th><th data-sort="name">Informação</th><th data-sort="clock">Duração</th><th data-sort="acknowledged">Tratamento</th><th>Ação</th></tr></thead>
-        <tbody id="resource-rows"><tr><td colspan="8" class="loading">Carregando recursos…</td></tr></tbody>
+        <thead><tr><th class="resource-check-col"></th><th data-sort="severity">Status</th><th data-sort="host_name">Host</th><th data-sort="group_name">Grupo</th><th>Recurso</th><th data-sort="name">Informação</th><th data-sort="clock">Duração</th><th data-sort="acknowledged">Tratamento</th><th>Ação</th></tr></thead>
+        <tbody id="resource-rows"><tr><td colspan="9" class="loading">Carregando recursos…</td></tr></tbody>
       </table>
     </div>
     <div class="resource-pagination" id="resource-pagination"></div>
   </article>
 </section>
+
+<div class="resource-drawer-backdrop" id="resource-drawer-backdrop" hidden></div>
+<aside class="resource-drawer" id="resource-drawer" aria-hidden="true">
+  <header class="drawer-header">
+    <div><span class="sev-solid" id="drawer-severity">—</span><h2 id="drawer-title">Detalhes do recurso</h2><small id="drawer-host">—</small></div>
+    <button id="drawer-close" type="button" aria-label="Fechar">×</button>
+  </header>
+  <nav class="drawer-tabs">
+    <button class="is-active" data-drawer-tab="details">Detalhes</button>
+    <button data-drawer-tab="timeline">Linha do tempo</button>
+    <button data-drawer-tab="graph">Gráfico</button>
+  </nav>
+  <div class="drawer-body" id="drawer-body"><div class="drawer-loading">Carregando…</div></div>
+</aside>
+
+<dialog class="resource-dialog" id="ack-dialog">
+  <form method="dialog"><header><h2>Reconhecer problemas</h2><button value="cancel" aria-label="Fechar">×</button></header><p>Registre o que está sendo feito para manter o histórico operacional.</p><textarea id="ack-message" rows="4" placeholder="Ex.: Equipe acionada e diagnóstico iniciado"></textarea><footer><button value="cancel" class="is-quiet">Cancelar</button><button id="ack-confirm" value="default">Reconhecer</button></footer></form>
+</dialog>
+<dialog class="resource-dialog" id="maintenance-dialog">
+  <form method="dialog"><header><h2>Programar manutenção</h2><button value="cancel" aria-label="Fechar">×</button></header><label>Nome<input id="maintenance-name" value="Manutenção ANTIGEN"></label><label>Duração<select id="maintenance-minutes"><option value="30">30 minutos</option><option value="60" selected>1 hora</option><option value="120">2 horas</option><option value="240">4 horas</option><option value="480">8 horas</option><option value="1440">1 dia</option></select></label><label>Descrição<textarea id="maintenance-description" rows="3" placeholder="Motivo da manutenção"></textarea></label><footer><button value="cancel" class="is-quiet">Cancelar</button><button id="maintenance-confirm" value="default">Agendar manutenção</button></footer></form>
+</dialog>
 <script id="recursos-initial-data" type="application/json">{{ initial_json | safe }}</script>
 {% endblock %}
 {% block scripts %}<script src="{{ url_for('static', filename='js/recursos.js') }}"></script>{% endblock %}

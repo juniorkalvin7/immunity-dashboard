@@ -85,6 +85,142 @@ def acknowledge(eventid: str, message: str = "") -> None:
     zbx.call("event.acknowledge", params)
 
 
+def acknowledge_many(eventids: list[str], message: str = "") -> None:
+    """Acknowledge multiple events in one Zabbix API operation."""
+    clean_ids = [str(eventid) for eventid in eventids if str(eventid).isdigit()]
+    if not clean_ids:
+        raise ValueError("Nenhum evento selecionado")
+    action = 2 | (4 if message else 0)
+    params = {"eventids": clean_ids, "action": action}
+    if message:
+        params["message"] = message
+    zbx.call("event.acknowledge", params)
+
+
+def get_event_details(eventid: str, hours: int = 24) -> dict:
+    """Operational detail, audit timeline and the primary trigger item history."""
+    hours = max(1, min(int(hours), 24 * 31))
+    events = zbx.call(
+        "event.get",
+        {
+            "output": "extend",
+            "eventids": [eventid],
+            "selectHosts": ["hostid", "name"],
+            "selectTags": "extend",
+            "selectAcknowledges": "extend",
+        },
+    )
+    if not events:
+        raise ValueError("Evento não encontrado")
+    event = events[0]
+    host = (event.get("hosts") or [{}])[0]
+    triggerid = event.get("objectid")
+    trigger = {}
+    item = None
+    if triggerid:
+        triggers = zbx.call(
+            "trigger.get",
+            {
+                "output": ["triggerid", "description", "expression", "priority", "lastchange", "comments", "opdata"],
+                "triggerids": [triggerid],
+                "selectItems": ["itemid", "name", "key_", "lastvalue", "units", "value_type", "lastclock"],
+            },
+        )
+        if triggers:
+            trigger = triggers[0]
+            items = trigger.get("items") or []
+            item = items[0] if items else None
+
+    history = []
+    if item:
+        raw_history = zbx.call(
+            "history.get",
+            {
+                "output": "extend",
+                "history": int(item.get("value_type", 0)),
+                "itemids": [item["itemid"]],
+                "time_from": int(time.time()) - hours * 3600,
+                "sortfield": "clock",
+                "sortorder": "ASC",
+                "limit": 600,
+            },
+        )
+        for point in raw_history:
+            try:
+                history.append({"clock": int(point["clock"]), "value": float(point["value"])})
+            except (KeyError, TypeError, ValueError):
+                continue
+
+    timeline = [
+        {
+            "clock": int(event.get("clock", 0)),
+            "type": "problem",
+            "user": "Zabbix",
+            "message": "Problema detectado",
+        }
+    ]
+    for ack in event.get("acknowledges") or []:
+        timeline.append(
+            {
+                "clock": int(ack.get("clock", 0)),
+                "type": "acknowledge" if int(ack.get("action", 0)) & 2 else "comment",
+                "user": ack.get("name") or ack.get("username") or "Operador",
+                "message": ack.get("message") or "Evento reconhecido",
+            }
+        )
+    timeline.sort(key=lambda row: row["clock"], reverse=True)
+
+    return {
+        "eventid": eventid,
+        "name": event.get("name", trigger.get("description", "—")),
+        "severity": int(event.get("severity", 0)),
+        "severity_name": _severity_name(event.get("severity", 0)),
+        "acknowledged": event.get("acknowledged") == "1",
+        "clock": int(event.get("clock", 0)),
+        "duration": _duration(event.get("clock", 0)),
+        "hostid": host.get("hostid"),
+        "host_name": host.get("name", "—"),
+        "tags": event.get("tags") or [],
+        "trigger": {
+            "id": triggerid,
+            "expression": trigger.get("expression", "—"),
+            "comments": trigger.get("comments", ""),
+            "operational_data": trigger.get("opdata", ""),
+        },
+        "item": ({
+            "itemid": item.get("itemid"),
+            "name": item.get("name"),
+            "key": item.get("key_"),
+            "lastvalue": item.get("lastvalue"),
+            "units": item.get("units", ""),
+        } if item else None),
+        "timeline": timeline,
+        "history": history,
+        "period_hours": hours,
+    }
+
+
+def schedule_maintenance(hostids: list[str], minutes: int, name: str, description: str = "") -> dict:
+    """Create a one-time Zabbix maintenance window for selected hosts."""
+    clean_ids = sorted({str(hostid) for hostid in hostids if str(hostid).isdigit()})
+    if not clean_ids:
+        raise ValueError("Nenhum host selecionado")
+    minutes = max(5, min(int(minutes), 7 * 24 * 60))
+    start = int(time.time())
+    end = start + minutes * 60
+    return zbx.call(
+        "maintenance.create",
+        {
+            "name": name or "Manutenção ANTIGEN",
+            "description": description,
+            "active_since": start,
+            "active_till": end,
+            "hostids": clean_ids,
+            "timeperiods": [{"timeperiod_type": 0, "start_date": start, "period": minutes * 60}],
+        },
+    )
+
+
 def get_summary(incidents: list[dict]) -> dict:
     by_sev = {name: 0 for name in SEVERITY_NAMES}
     unacknowledged = 0

@@ -109,6 +109,37 @@ def api_ack_incidente(eventid):
     return jsonify({"ok": True})
 
 
+@app.route("/api/recursos/<eventid>/details")
+def api_recurso_details(eventid):
+    try:
+        return jsonify(incidents.get_event_details(eventid, request.args.get("hours", 24)))
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)}), 502
+
+
+@app.route("/api/recursos/ack", methods=["POST"])
+def api_recursos_ack():
+    payload = request.get_json(silent=True) or {}
+    try:
+        incidents.acknowledge_many(payload.get("eventids") or [], payload.get("message", ""))
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)}), 502
+    return jsonify({"ok": True})
+
+
+@app.route("/api/recursos/maintenance", methods=["POST"])
+def api_recursos_maintenance():
+    payload = request.get_json(silent=True) or {}
+    try:
+        result = incidents.schedule_maintenance(
+            payload.get("hostids") or [], payload.get("minutes", 60),
+            payload.get("name", "Manutenção ANTIGEN"), payload.get("description", ""),
+        )
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)}), 502
+    return jsonify({"ok": True, "result": result})
+
+
 def _incidentes_data() -> dict:
     incident_list = incidents.get_incidents()
     groups = sorted({inc["group_name"] for inc in incident_list if inc["group_name"] != "—"})
