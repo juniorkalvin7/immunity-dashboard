@@ -54,6 +54,13 @@ function resourceState(cardName, count) {
   card.classList.toggle("is-healthy", Number(count) === 0);
 }
 
+function resourceUsageState(cardName, value) {
+  const card = document.querySelector(`[data-resource-status="${cardName}"]`);
+  if (!card) return;
+  card.classList.remove("has-problem", "has-warning", "is-healthy");
+  card.classList.add(value >= 85 ? "has-problem" : value >= 70 ? "has-warning" : "is-healthy");
+}
+
 function pressureBar(value) {
   const segments = 28;
   const active = Math.round(Math.max(0, Math.min(100, value)) / 100 * segments);
@@ -74,17 +81,20 @@ function pressureRows(rows, kind) {
 
 function renderResourcePressure(pressure) {
   const counts = pressure.counts || {};
-  setOverviewText("ov-cpu-critical", counts.cpu || 0);
-  setOverviewText("ov-memory-critical", counts.memory || 0);
-  setOverviewText("ov-disk-critical", counts.disk || 0);
+  const cpuTop = (pressure.cpu || [])[0];
+  const memoryTop = (pressure.memory || [])[0];
+  const diskTop = (pressure.disk || [])[0];
+  setOverviewText("ov-cpu-critical", cpuTop ? `${cpuTop.value.toFixed(1)}%` : "–");
+  setOverviewText("ov-memory-critical", memoryTop ? `${memoryTop.value.toFixed(1)}%` : "–");
+  setOverviewText("ov-disk-critical", diskTop ? `${diskTop.value.toFixed(1)}%` : "–");
   setOverviewText("ov-hosts-down", counts.down || 0);
-  setOverviewText("ov-cpu-detail", `${(pressure.cpu || []).length} hosts analisados`);
-  setOverviewText("ov-memory-detail", `${(pressure.memory || []).length} hosts analisados`);
-  setOverviewText("ov-disk-detail", `${(pressure.disk || []).length} hosts analisados`);
+  setOverviewText("ov-cpu-detail", cpuTop ? cpuTop.host_name : "Sem dados disponíveis");
+  setOverviewText("ov-memory-detail", memoryTop ? memoryTop.host_name : "Sem dados disponíveis");
+  setOverviewText("ov-disk-detail", diskTop ? `${diskTop.host_name}${diskTop.detail ? ` · ${diskTop.detail}` : ""}` : "Sem dados disponíveis");
   setOverviewText("ov-down-detail", counts.down ? "Exigem ação imediata" : "Todos comunicando");
-  resourceState("cpu", counts.cpu || 0);
-  resourceState("memory", counts.memory || 0);
-  resourceState("disk", counts.disk || 0);
+  resourceUsageState("cpu", cpuTop ? cpuTop.value : 0);
+  resourceUsageState("memory", memoryTop ? memoryTop.value : 0);
+  resourceUsageState("disk", diskTop ? diskTop.value : 0);
   resourceState("down", counts.down || 0);
 
   document.getElementById("ov-pressure-cpu").innerHTML = pressureRows(pressure.cpu || [], "cpu");
