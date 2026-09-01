@@ -6,7 +6,7 @@
 <title>Antigen Netviso — {% block title %}Painel{% endblock %}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 </head>
-<body>
+<body class="page-{{ active_page }}">
 <div class="shell">
   <nav class="sidebar">
     <div class="brand">
@@ -37,23 +37,6 @@
   </nav>
 
   <main>
-    <section class="operations-strip" aria-label="Resumo operacional">
-      <div class="strip-group">
-        <span class="strip-group-icon"><span data-icon="server"></span><small>HOSTS</small></span>
-        <span class="strip-count is-critical" title="Hosts indisponíveis"><strong id="bar-host-down">–</strong><small>DOWN</small></span>
-        <span class="strip-count is-warning" title="Hosts com alerta"><strong id="bar-host-alert">–</strong><small>ALERTA</small></span>
-        <span class="strip-count is-ok" title="Hosts saudáveis"><strong id="bar-host-ok">–</strong><small>OK</small></span>
-      </div>
-      <span class="strip-divider"></span>
-      <div class="strip-group">
-        <span class="strip-group-icon"><span data-icon="services"></span><small>SERVIÇOS</small></span>
-        <span class="strip-count is-critical" title="Serviços críticos"><strong id="bar-svc-critical">–</strong><small>CRÍTICO</small></span>
-        <span class="strip-count is-average" title="Serviços em severidade média"><strong id="bar-svc-average">–</strong><small>MÉDIO</small></span>
-        <span class="strip-count is-warning" title="Serviços em aviso"><strong id="bar-svc-warning">–</strong><small>AVISO</small></span>
-        <span class="strip-count is-ok" title="Itens monitorados sem problema"><strong id="bar-svc-ok">–</strong><small>OK</small></span>
-      </div>
-      <span class="strip-source"><span class="dot dot-ok"></span> ZABBIX LIVE</span>
-    </section>
     <div class="breadcrumb">{% block breadcrumb %}Monitoramento{% endblock %} <span class="sep">/</span> {% block breadcrumb_current %}{% endblock %}</div>
     <header class="page-header-row">
       <div>
@@ -61,7 +44,22 @@
         <span class="page-sub">{% block page_sub %}{% endblock %}</span>
       </div>
       <div class="header-actions">
-        <span class="live-indicator"><span id="live-dot" class="dot dot-ok"></span> <span id="last-update">Atualizado agora</span></span>
+        <section class="operations-strip" aria-label="Resumo operacional">
+          <div class="strip-group">
+            <span class="strip-group-icon"><span data-icon="server"></span><small>HOSTS</small></span>
+            <span class="strip-count is-critical" title="Hosts indisponíveis"><strong id="bar-host-down">–</strong><small>DOWN</small></span>
+            <span class="strip-count is-warning" title="Hosts com alerta"><strong id="bar-host-alert">–</strong><small>ALERTA</small></span>
+            <span class="strip-count is-ok" title="Hosts saudáveis"><strong id="bar-host-ok">–</strong><small>OK</small></span>
+          </div>
+          <span class="strip-divider"></span>
+          <div class="strip-group">
+            <span class="strip-group-icon"><span data-icon="services"></span><small>SERVIÇOS</small></span>
+            <span class="strip-count is-critical" title="Serviços críticos"><strong id="bar-svc-critical">–</strong><small>CRÍTICO</small></span>
+            <span class="strip-count is-average" title="Serviços em severidade média"><strong id="bar-svc-average">–</strong><small>MÉDIO</small></span>
+            <span class="strip-count is-warning" title="Serviços em aviso"><strong id="bar-svc-warning">–</strong><small>AVISO</small></span>
+            <span class="strip-count is-ok" title="Itens monitorados sem problema"><strong id="bar-svc-ok">–</strong><small>OK</small></span>
+          </div>
+        </section>
         <button class="icon-btn" type="button" title="Notificações" id="notif-btn">
           <span class="icon-slot" data-icon="bell"></span>
           <span class="notif-badge" id="notif-badge" hidden>0</span>
