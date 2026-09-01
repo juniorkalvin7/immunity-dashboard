@@ -57,6 +57,30 @@ def api_overview():
     return jsonify(_overview_data())
 
 
+@app.route("/api/statusbar")
+def api_statusbar():
+    incident_list = incidents.get_incidents()
+    summary = incidents.get_summary(incident_list)
+    health = incidents.get_environment_health(incident_list)
+    availability = resources.get_global_availability()
+    service_problems = summary["total"]
+    return jsonify(
+        {
+            "hosts": {
+                "down": availability["down_hosts"],
+                "alert": health["hosts_with_problems"],
+                "ok": health["healthy_hosts"],
+            },
+            "services": {
+                "critical": summary["by_severity"]["disaster"] + summary["by_severity"]["high"],
+                "average": summary["by_severity"]["average"],
+                "warning": summary["by_severity"]["warning"],
+                "ok": max(0, availability["monitored_items"] - service_problems),
+            },
+        }
+    )
+
+
 @app.route("/api/firewalls")
 def api_firewalls():
     return jsonify(_firewalls_data())
