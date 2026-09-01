@@ -37,6 +37,24 @@ def _resource_items(prefix: str) -> list[dict]:
     )
 
 
+def _percent_items() -> list[dict]:
+    """All live percentage items from monitored hosts.
+
+    Filtering by unit/monitoring state is much more reliable than Zabbix's
+    server-side key search across heterogeneous agent, SNMP and VMware
+    templates. Classification happens locally below.
+    """
+    return _safe_call(
+        "item.get",
+        {
+            "output": ["itemid", "hostid", "name", "key_", "lastvalue", "lastclock", "units"],
+            "filter": {"status": 0, "state": 0, "units": "%"},
+            "monitored": True,
+            "selectHosts": ["hostid", "name"],
+        },
+    )
+
+
 def _row(item: dict, value: float, detail: str = "") -> dict:
     hosts = item.get("hosts") or []
     return {
@@ -66,34 +84,50 @@ def _top_cpu() -> list[dict]:
     return sorted(rows, key=lambda row: row["value"], reverse=True)
 
 
-def _top_memory() -> list[dict]:
+def _top_memory(percent_items: list[dict]) -> list[dict]:
     rows_by_host = {}
-    for item in _resource_items("vm.memory"):
-        key = item.get("key_", "")
+    for item in percent_items:
+        key = item.get("key_", "").lower()
+        name = item.get("name", "").lower()
+        is_memory = (
+            (key.startswith("vm.memory") and any(token in key for token in ("util", "pused", "usage")))
+            or "memory utilization" in name
+            or "memory usage" in name
+            or "utilização de memória" in name
+            or "uso de memória" in name
+        )
+        if not is_memory or any(token in key for token in ("swap", "cache", "heap")):
+            continue
         value = _number(item.get("lastvalue"))
         if value is None:
             continue
-        if key == "vm.memory.utilization" or "pused" in key:
-            used = value
-        elif "pavailable" in key:
-            used = 100.0 - value
-        else:
-            continue
+        used = 100.0 - value if "pavailable" in key or "available" in name else value
         rows_by_host[item.get("hostid")] = _row(item, used)
     return sorted(rows_by_host.values(), key=lambda row: row["value"], reverse=True)
 
 
-def _top_disk() -> list[dict]:
+def _top_disk(percent_items: list[dict]) -> list[dict]:
     rows_by_host = {}
-    for item in _resource_items("vfs.fs"):
-        key = item.get("key_", "")
-        if ",pused]" not in key:
+    for item in percent_items:
+        key = item.get("key_", "").lower()
+        name = item.get("name", "").lower()
+        is_disk = (
+            ("vfs.fs" in key and any(token in key for token in ("pused", "util", "usage")))
+            or "space utilization" in name
+            or "disk utilization" in name
+            or "filesystem utilization" in name
+            or "file system utilization" in name
+            or "utilização de disco" in name
+            or "uso de disco" in name
+        )
+        if not is_disk or "inode" in key or "inode" in name:
             continue
         value = _number(item.get("lastvalue"))
         if value is None:
             continue
         open_bracket = key.find("[")
-        mount = key[open_bracket + 1 : key.rfind(",pused]")] if open_bracket >= 0 else key
+        comma = key.rfind(",")
+        mount = key[open_bracket + 1 : comma] if open_bracket >= 0 and comma > open_bracket else item.get("name", "")
         row = _row(item, value, mount)
         current = rows_by_host.get(item.get("hostid"))
         if current is None or row["value"] > current["value"]:
@@ -124,9 +158,10 @@ def _down_hosts() -> list[dict]:
 
 
 def get_resource_pressure() -> dict:
+    percent_items = _percent_items()
     cpu = _top_cpu()
-    memory = _top_memory()
-    disk = _top_disk()
+    memory = _top_memory(percent_items)
+    disk = _top_disk(percent_items)
     down = _down_hosts()
     return {
         "cpu": cpu[:LIMIT_PER_RESOURCE],
