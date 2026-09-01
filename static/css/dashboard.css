@@ -1029,6 +1029,14 @@ main { max-width: none; padding: 22px clamp(18px, 2.1vw, 38px) 32px; }
   .strip-count { min-width: 34px; }
   .strip-count strong { min-width: 28px; height: 28px; padding-inline: 6px; }
 }
+
+/* "SERVIÇOS" needs a wider label slot than "HOSTS". */
+.strip-divider + .strip-group { gap: 7px; }
+.strip-divider + .strip-group .strip-group-icon {
+  width: 48px;
+  min-width: 48px;
+  margin-right: 2px;
+}
 .breadcrumb { color: var(--accent); }
 .page-header-row h1 { font-size: clamp(22px, 1.65vw, 30px); letter-spacing: -.025em; }
 .page-sub { font-size: 13px; }
