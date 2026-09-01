@@ -1,0 +1,12 @@
+{% macro severity_badge(name) -%}
+<span class="sev sev-{{ name }}">{{ name.replace('_', ' ') }}</span>
+{%- endmacro %}
+
+{% macro metric_bar(pct) -%}
+{%- if pct is none -%}
+<span class="metric">—</span>
+{%- else -%}
+{%- set cls = 'bad' if pct >= 90 else ('warn' if pct >= 75 else '') -%}
+<span class="metric-bar"><span class="{{ cls }}" style="width:{{ [pct, 100] | min }}%"></span></span><span class="metric">{{ pct }}%</span>
+{%- endif -%}
+{%- endmacro %}

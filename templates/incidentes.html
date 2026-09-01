@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Incidentes{% endblock %}
+{% block breadcrumb_current %}Incidentes{% endblock %}
+{% block page_title %}Central de Incidentes{% endblock %}
+{% block page_sub %}Visão consolidada dos ativos monitorados pelo Zabbix{% endblock %}
+
+{% block content %}
+<section class="page" id="page-incidentes">
+
+  <div class="stat-cards" id="stat-cards">
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-accent"><span data-icon="bell"></span></div>
+      <div class="stat-body">
+        <div class="stat-value" id="inc-total">–</div>
+        <div class="stat-label">Incidentes ativos</div>
+        <div class="stat-trend" id="trend-total"></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-disaster"><span data-icon="flame"></span></div>
+      <div class="stat-body">
+        <div class="stat-value" id="inc-disaster">–</div>
+        <div class="stat-label">Disaster</div>
+        <div class="stat-trend" id="trend-disaster"></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-high"><span data-icon="shield"></span></div>
+      <div class="stat-body">
+        <div class="stat-value" id="inc-high">–</div>
+        <div class="stat-label">High</div>
+        <div class="stat-trend" id="trend-high"></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-average"><span data-icon="trend"></span></div>
+      <div class="stat-body">
+        <div class="stat-value" id="inc-average">–</div>
+        <div class="stat-label">Average</div>
+        <div class="stat-trend" id="trend-average"></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-warning"><span data-icon="alertTriangle"></span></div>
+      <div class="stat-body">
+        <div class="stat-value" id="inc-warning">–</div>
+        <div class="stat-label">Warning</div>
+        <div class="stat-trend" id="trend-warning"></div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-unack"><span data-icon="helpCircle"></span></div>
+      <div class="stat-body">
+        <div class="stat-value" id="inc-unack">–</div>
+        <div class="stat-label">Não reconhecidos</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col-row">
+    <div class="panel priority-panel">
+      <h2>Prioridade operacional</h2>
+      <div class="priority-bar" id="priority-bar"></div>
+      <div class="priority-legend" id="priority-legend"></div>
+    </div>
+    <div class="panel health-panel">
+      <h2>Saúde do ambiente</h2>
+      <div class="health-main">
+        <div class="health-pct" id="health-pct">–%</div>
+        <div class="health-label">Índice de disponibilidade</div>
+      </div>
+      <div class="health-stats">
+        <div class="health-stat"><span class="health-stat-value" id="health-total">–</span><label>Hosts</label></div>
+        <div class="health-stat"><span class="health-stat-value is-ok" id="health-ok">–</span><label>Saudáveis</label></div>
+        <div class="health-stat"><span class="health-stat-value is-bad" id="health-bad">–</span><label>Com alerta</label></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert-banner" id="alert-banner" hidden>
+    <span class="alert-icon" data-icon="alertTriangle"></span>
+    <div class="alert-text">
+      <strong id="alert-title"></strong>
+      <span id="alert-desc"></span>
+    </div>
+    <button class="alert-cta" id="alert-cta" type="button">Ver críticos →</button>
+  </div>
+
+  <div class="queue-header">
+    <h2>Fila de incidentes</h2>
+    <span class="queue-count" id="filter-count"></span>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-wrap">
+      <span class="search-icon" data-icon="search"></span>
+      <input type="search" id="filter-search" placeholder="buscar host, problema ou tag" autocomplete="off">
+    </div>
+
+    <div class="sev-toggles" id="sev-toggles">
+      <button type="button" class="sev-toggle is-active" data-sev="all">todos</button>
+      <button type="button" class="sev-toggle is-active sev-toggle-disaster" data-sev="disaster">disaster</button>
+      <button type="button" class="sev-toggle is-active sev-toggle-high" data-sev="high">high</button>
+      <button type="button" class="sev-toggle is-active sev-toggle-average" data-sev="average">average</button>
+      <button type="button" class="sev-toggle is-active sev-toggle-warning" data-sev="warning">warning</button>
+      <button type="button" class="sev-toggle is-active sev-toggle-information" data-sev="information">information</button>
+    </div>
+
+    <select id="filter-group">
+      <option value="">todos os grupos</option>
+    </select>
+
+    <label class="switch-label">
+      <span class="switch"><input type="checkbox" id="filter-unack"><span class="switch-track"></span></span>
+      somente não reconhecidos
+    </label>
+  </div>
+
+  <div class="panel">
+    <table class="problems-table sortable" id="inc-table">
+      <colgroup>
+        <col style="width: 9%">
+        <col style="width: 14%">
+        <col style="width: 13%">
+        <col style="width: 28%">
+        <col style="width: 14%">
+        <col style="width: 8%">
+        <col style="width: 8%">
+        <col style="width: 6%">
+      </colgroup>
+      <thead>
+        <tr>
+          <th data-sort="severity">Severidade</th>
+          <th data-sort="host_name">Host</th>
+          <th data-sort="group_name">Grupo</th>
+          <th data-sort="name">Problema</th>
+          <th>Tags</th>
+          <th data-sort="clock">Duração</th>
+          <th data-sort="acknowledged">Status</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+      <tbody id="inc-rows">
+        <tr><td colspan="8" class="loading">carregando…</td></tr>
+      </tbody>
+    </table>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</section>
+
+<script id="incidentes-initial-data" type="application/json">{{ initial_json | safe }}</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/incidentes.js') }}"></script>
+{% endblock %}

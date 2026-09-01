@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% from "_macros.html" import severity_badge, metric_bar %}
+{% block title %}Firewalls Sophos{% endblock %}
+
+{% block content %}
+<section class="page" id="page-firewalls">
+  <header class="page-header">
+    <h1>Firewalls Sophos</h1>
+    <span class="page-sub">IPsec, SSL VPN, saúde do equipamento</span>
+  </header>
+
+  <section class="summary" id="fw-summary">
+    <div class="stat">
+      <div class="stat-value" id="stat-hosts">{{ summary.count }}</div>
+      <div class="stat-label">firewalls</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="stat-ipsec-up">{{ summary.ipsec_up }}</div>
+      <div class="stat-label">túneis IPsec up</div>
+    </div>
+    <div class="stat stat-warn">
+      <div class="stat-value {{ 'is-bad' if summary.ipsec_down > 0 else 'is-ok' }}" id="stat-ipsec-down">{{ summary.ipsec_down }}</div>
+      <div class="stat-label">túneis IPsec down</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="stat-sslvpn">{{ summary.sslvpn_users }}</div>
+      <div class="stat-label">usuários SSL VPN</div>
+    </div>
+    <div class="stat stat-warn">
+      <div class="stat-value {{ 'is-bad' if problems else 'is-ok' }}" id="stat-problems">{{ problems | length }}</div>
+      <div class="stat-label">problemas ativos</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Firewalls</h2>
+    <table class="fw-table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Modelo</th>
+          <th>Firmware</th>
+          <th>Uptime</th>
+          <th>Mem</th>
+          <th>Disco</th>
+          <th>Swap</th>
+          <th>IPsec</th>
+          <th>SSL VPN</th>
+        </tr>
+      </thead>
+      <tbody id="fw-rows">
+        {% for fw in fleet %}
+        <tr>
+          <td class="fw-name">{{ fw.name }}</td>
+          <td class="fw-model">{{ fw.model }}</td>
+          <td class="mono-dim">{{ fw.firmware }}</td>
+          <td class="mono-dim">{{ fw.uptime }}</td>
+          <td>{{ metric_bar(fw.memory_pct) }}</td>
+          <td>{{ metric_bar(fw.disk_pct) }}</td>
+          <td>{{ metric_bar(fw.swap_pct) }}</td>
+          <td>
+            {% if fw.ipsec_up == 0 and fw.ipsec_down == 0 %}
+            <span class="mono-dim">—</span>
+            {% else %}
+            <span class="ipsec-cell"><span class="up">{{ fw.ipsec_up }} up</span><span class="sep">/</span><span class="down">{{ fw.ipsec_down }} down</span></span>
+            {% endif %}
+          </td>
+          <td>
+            {% if fw.sslvpn_users %}
+            <span class="badge badge-active">{{ fw.sslvpn_users }}</span>
+            {% else %}
+            <span class="badge badge-zero">0</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="empty">nenhum firewall encontrado</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>Usuários SSL VPN conectados</h2>
+    <table class="user-table">
+      <thead>
+        <tr>
+          <th>Firewall</th>
+          <th>Usuário</th>
+          <th>IP origem</th>
+          <th>IP atribuído</th>
+          <th>Conectado desde</th>
+          <th>Download</th>
+          <th>Upload</th>
+        </tr>
+      </thead>
+      <tbody id="sslvpn-rows">
+        {% for u in sslvpn_sessions %}
+        <tr>
+          <td class="mono-dim">{{ u.host_name }}</td>
+          <td class="fw-name">{{ u.username }}</td>
+          <td class="metric">{{ u.source_ip }}</td>
+          <td class="metric">{{ u.assigned_ip }}</td>
+          <td class="mono-dim">{{ u.connected_since }}</td>
+          <td class="metric" data-bytes="{{ u.download_bytes }}"></td>
+          <td class="metric" data-bytes="{{ u.upload_bytes }}"></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="empty">nenhum usuário conectado</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>Problemas ativos (firewalls)</h2>
+    <table class="problems-table">
+      <thead>
+        <tr>
+          <th>Severidade</th>
+          <th>Firewall</th>
+          <th>Problema</th>
+          <th>Desde</th>
+        </tr>
+      </thead>
+      <tbody id="problems-rows">
+        {% for p in problems %}
+        <tr>
+          <td>{{ severity_badge(p.severity_name) }}</td>
+          <td class="mono-dim">{{ p.host_name }}</td>
+          <td>{{ p.name }}</td>
+          <td class="mono-dim">{{ p.since }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="empty">nenhum problema ativo</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/firewalls.js') }}"></script>
+{% endblock %}
