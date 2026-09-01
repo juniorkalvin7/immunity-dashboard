@@ -894,3 +894,179 @@ tr[class*=" sev-row-"] td:first-child {
   padding: 3px 6px;
   font-family: var(--sans);
 }
+
+/* ================= ANTIGEN NETVISIO command center ================= */
+
+:root {
+  --bg: #071019;
+  --panel: #0d1822;
+  --border: #20313f;
+  --text: #edf4f8;
+  --text-dim: #93a4b2;
+  --text-faint: #5f7281;
+  --accent: #18b7f1;
+  --sev-information: #18b7f1;
+}
+
+html, body {
+  background-color: var(--bg);
+  background-image: radial-gradient(circle at 72% -25%, rgba(24, 183, 241, .08), transparent 34%);
+}
+
+.sidebar {
+  width: 236px;
+  flex-basis: 236px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  padding: 22px 12px 16px;
+  background: rgba(5, 11, 18, .94);
+}
+
+.brand {
+  padding: 0 10px 22px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  line-height: 1.15;
+}
+
+.brand-mark {
+  width: 38px;
+  height: 38px;
+  color: var(--accent);
+  filter: drop-shadow(0 0 9px rgba(24, 183, 241, .25));
+}
+.brand-mark svg { display: block; width: 100%; height: 100%; }
+.brand-copy { display: block; }
+.brand-name { font-size: 17px; }
+.brand-name-2 { color: var(--accent); font-size: 10px; letter-spacing: .22em; margin-top: 3px; }
+
+.nav-list { padding-top: 4px; }
+.nav-link {
+  min-height: 42px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  margin-bottom: 3px;
+}
+.nav-link > span { width: 18px; height: 18px; display: inline-flex; flex: 0 0 18px; }
+.nav-link svg { width: 18px; height: 18px; }
+.nav-link.active {
+  color: var(--accent);
+  border-color: rgba(24, 183, 241, .45);
+  background: rgba(24, 183, 241, .09);
+  box-shadow: inset 0 0 24px rgba(24, 183, 241, .035);
+  font-weight: 600;
+}
+.nav-link.is-disabled { cursor: default; opacity: .72; }
+.nav-link.is-disabled:hover { color: var(--text-dim); background: transparent; }
+.nav-section { color: #476070; font-size: 9px; font-weight: 700; letter-spacing: .14em; padding: 10px 12px 7px; }
+.nav-section-spaced { margin-top: 14px; }
+
+.sidebar-status {
+  padding: 16px 10px 0;
+  flex-direction: column;
+  align-items: flex-start;
+  color: var(--text-dim);
+}
+
+main { max-width: none; padding: 22px clamp(18px, 2.1vw, 38px) 32px; }
+.breadcrumb { color: var(--accent); }
+.page-header-row h1 { font-size: clamp(22px, 1.65vw, 30px); letter-spacing: -.025em; }
+.page-sub { font-size: 13px; }
+.operator-avatar {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #263848;
+  border: 1px solid #3a5061;
+  color: #eaf4f8;
+  font: 700 10px var(--sans);
+}
+
+.stat-cards { gap: 10px; margin-bottom: 14px; }
+.stat-card {
+  min-width: 0;
+  border-color: var(--border);
+  background: linear-gradient(145deg, rgba(16, 30, 42, .96), rgba(9, 19, 28, .96));
+  box-shadow: 0 12px 35px rgba(0, 0, 0, .12);
+  transition: transform .15s ease, border-color .15s ease;
+}
+.stat-card:hover { transform: translateY(-1px); border-color: #345063; }
+.stat-body .stat-value { font-size: 27px; letter-spacing: -.04em; }
+.stat-body .stat-label { color: var(--text-dim); text-transform: none; letter-spacing: 0; }
+
+.panel, .filter-bar {
+  background: linear-gradient(145deg, rgba(16, 30, 42, .94), rgba(9, 19, 28, .94));
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+.panel { padding: 14px 16px; margin-bottom: 18px; }
+.panel h2 { color: var(--text); text-transform: none; letter-spacing: 0; font-size: 13px; }
+.panel:has(.problems-table) { padding: 0 0 10px; overflow: hidden; }
+.priority-panel, .health-panel { min-height: 126px; }
+.health-panel { display: grid; grid-template-columns: auto 1fr; column-gap: 24px; align-items: center; }
+.health-panel h2 { grid-column: 1 / -1; }
+.health-main { min-width: 150px; border: 0; border-right: 1px solid var(--border); margin: 0; padding: 2px 24px 4px 0; }
+.health-stats { gap: clamp(20px, 4vw, 70px); justify-content: space-evenly; }
+.alert-banner { background: linear-gradient(90deg, rgba(110, 25, 31, .34), rgba(55, 19, 27, .58)); }
+
+.queue-header { margin: 4px 0 9px; }
+.queue-header h2 { font-size: 14px; }
+.filter-bar { padding: 10px 12px; }
+#filter-search, #filter-group, .page-size-select {
+  background: #08121b;
+  border-color: #293d4c;
+  border-radius: 5px;
+}
+#filter-search { min-width: 245px; height: 32px; }
+.sev-toggle { border-radius: 5px; text-transform: none; }
+.sev-toggle[data-sev="all"].is-active { background: rgba(24, 183, 241, .12); }
+
+thead th { padding: 10px 12px; background: rgba(255,255,255,.018); }
+tbody td { padding: 9px 12px; }
+tbody tr:hover td { background: rgba(24, 183, 241, .035); }
+.ack-btn { border-color: rgba(24, 183, 241, .45); border-radius: 4px; }
+.pagination { padding: 12px 16px 2px; }
+
+@media (max-width: 1450px) {
+  .stat-card { padding: 12px; gap: 9px; }
+  .stat-icon { width: 30px; height: 30px; flex-basis: 30px; }
+  .stat-trend { font-size: 9px; }
+  .filter-bar { gap: 7px; }
+  #filter-search { min-width: 205px; }
+}
+
+@media (max-width: 1180px) {
+  .stat-cards { grid-template-columns: repeat(3, 1fr); }
+  .two-col-row { grid-template-columns: 1fr; }
+  .sidebar { width: 205px; flex-basis: 205px; }
+  .health-panel { grid-template-columns: 180px 1fr; }
+  .problems-table { min-width: 1050px; }
+  .panel:has(.problems-table) { overflow-x: auto; }
+}
+
+@media (max-width: 760px) {
+  .shell { display: block; }
+  .sidebar { width: 100%; height: auto; position: static; padding: 14px; }
+  .brand { border-bottom: 0; margin-bottom: 0; padding-bottom: 12px; }
+  .nav-list { display: flex; overflow-x: auto; gap: 5px; }
+  .nav-section, .nav-link.is-disabled, .sidebar-status { display: none; }
+  .nav-link { white-space: nowrap; }
+  main { padding: 16px 12px 28px; }
+  .stat-cards { grid-template-columns: repeat(2, 1fr); }
+  .page-header-row { gap: 10px; }
+  .live-indicator, .operator-avatar { display: none; }
+  .health-panel { display: block; }
+  .health-main { border-right: 0; border-bottom: 1px solid var(--border); padding: 2px 0 12px; margin-bottom: 12px; }
+  .alert-banner { align-items: flex-start; }
+  .alert-cta { display: none; }
+  .pagination { min-width: 720px; }
+}
