@@ -22,7 +22,15 @@ def _safe_embed_json(data: dict) -> str:
 
 @app.route("/")
 def index():
-    return redirect(url_for("incidentes_page"))
+    return redirect(url_for("overview_page"))
+
+
+@app.route("/overview")
+def overview_page():
+    data = _overview_data()
+    return render_template(
+        "overview.html", active_page="overview", initial_json=_safe_embed_json(data)
+    )
 
 
 @app.route("/incidentes")
@@ -42,6 +50,11 @@ def firewalls_page():
 @app.route("/api/incidentes")
 def api_incidentes():
     return jsonify(_incidentes_data())
+
+
+@app.route("/api/overview")
+def api_overview():
+    return jsonify(_overview_data())
 
 
 @app.route("/api/firewalls")
@@ -80,6 +93,37 @@ def _firewalls_data() -> dict:
         "summary": firewalls.get_summary(fleet),
         "sslvpn_sessions": firewalls.get_sslvpn_sessions(hosts),
         "problems": firewalls.get_firewall_problems(hosts),
+    }
+
+
+def _overview_data() -> dict:
+    incident_list = incidents.get_incidents()
+    incident_summary = incidents.get_summary(incident_list)
+    health = incidents.get_environment_health(incident_list)
+    hosts = firewalls.get_hosts()
+    fleet = firewalls.get_fleet(hosts)
+    firewall_summary = firewalls.get_summary(fleet)
+
+    group_counts = {}
+    for incident in incident_list:
+        group = incident.get("group_name") or "—"
+        group_counts[group] = group_counts.get(group, 0) + 1
+
+    critical = sorted(
+        [incident for incident in incident_list if incident["severity"] >= 4],
+        key=lambda incident: (-incident["severity"], int(incident["clock"])),
+    )[:6]
+
+    return {
+        "incidents": incident_list,
+        "summary": incident_summary,
+        "health": health,
+        "firewalls": firewall_summary,
+        "critical": critical,
+        "top_groups": [
+            {"name": name, "count": count}
+            for name, count in sorted(group_counts.items(), key=lambda item: (-item[1], item[0]))[:5]
+        ],
     }
 
 
