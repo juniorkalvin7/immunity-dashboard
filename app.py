@@ -117,6 +117,17 @@ def api_recurso_details(eventid):
         return jsonify({"ok": False, "error": str(exc)}), 502
 
 
+@app.route("/api/recursos/trigger/<triggerid>/details")
+def api_recurso_trigger_details(triggerid):
+    eventid = request.args.get("eventid")
+    try:
+        if eventid:
+            return jsonify(incidents.get_event_details(eventid, request.args.get("hours", 24)))
+        return jsonify(resources.get_trigger_details(triggerid, request.args.get("hours", 24)))
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)}), 502
+
+
 @app.route("/api/recursos/ack", methods=["POST"])
 def api_recursos_ack():
     payload = request.get_json(silent=True) or {}
@@ -155,33 +166,18 @@ def _incidentes_data() -> dict:
 
 def _recursos_data() -> dict:
     records = incidents.get_incidents()
-    resource_terms = (
-        "cpu", "memory", "memória", "memoria", "disk", "disco", "storage",
-        "filesystem", "file system", "swap", "load", "interface", "port",
-        "vpn", "ipsec", "service", "serviço", "servico", "unreachable",
-        "offline", "not running", "down",
-    )
-
-    enriched = []
-    for record in records:
-        searchable = " ".join(
-            [record.get("name", ""), record.get("host_name", ""), *(record.get("tags") or [])]
-        ).lower()
-        enriched.append(
-            {
-                **record,
-                "is_resource_problem": any(term in searchable for term in resource_terms),
-            }
-        )
-
+    catalog = resources.get_monitored_resources(records)
+    enriched = catalog["resources"]
     return {
         "resources": enriched,
         "groups": sorted({row["group_name"] for row in enriched if row["group_name"] != "—"}),
+        "status_counts": catalog["status_counts"],
         "summary": {
             "total": len(enriched),
-            "unhandled": sum(not row["acknowledged"] for row in enriched),
+            "active": sum(row["has_problem"] for row in enriched),
+            "unhandled": sum(row["has_problem"] and not row["acknowledged"] for row in enriched),
             "resource_problems": sum(row["is_resource_problem"] for row in enriched),
-            "critical": sum(row["severity"] >= 4 for row in enriched),
+            "critical": sum(row["status_name"] in ("critical", "down", "unreachable") for row in enriched),
         },
     }
 

@@ -58,6 +58,7 @@ def get_incidents() -> list[dict]:
         incidents.append(
             {
                 "eventid": p["eventid"],
+                "triggerid": p.get("objectid"),
                 "name": p["name"],
                 "severity": int(p["severity"]),
                 "severity_name": _severity_name(p["severity"]),
