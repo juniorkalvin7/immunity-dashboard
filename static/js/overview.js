@@ -16,35 +16,83 @@ function renderOverview(data) {
   const criticalCount = (summary.by_severity.disaster || 0) + (summary.by_severity.high || 0);
   const pressure = data.resources || { cpu: [], memory: [], disk: [], down_hosts: [], counts: {} };
 
-  setOverviewText("ov-health", health.health_pct + "%");
-  setOverviewText("ov-health-detail", `${health.healthy_hosts} de ${health.total_hosts} hosts saudáveis`);
-  setOverviewText("ov-incidents", summary.total);
-  setOverviewText("ov-unack", `${summary.unacknowledged} não reconhecidos`);
-  setOverviewText("ov-critical", criticalCount);
-  setOverviewText("ov-firewalls", firewalls.count);
-  setOverviewText("ov-ipsec", `${firewalls.ipsec_down} túneis indisponíveis`);
-  setOverviewText("ov-vpn", firewalls.sslvpn_users);
-  setOverviewText("ov-vpn-card", firewalls.sslvpn_users);
-  setOverviewText("ov-ipsec-up", firewalls.ipsec_up);
-  setOverviewText("ov-ipsec-down", firewalls.ipsec_down);
-  setOverviewText("ov-gauge-value", health.health_pct + "%");
-  setOverviewText("ov-host-total", health.total_hosts);
-  setOverviewText("ov-host-ok", health.healthy_hosts);
-  setOverviewText("ov-host-bad", health.hosts_with_problems);
-  setOverviewText("ov-critical-counter", `${criticalCount} crítico${criticalCount === 1 ? "" : "s"}`);
-
-  const healthColor = health.health_pct >= 90 ? "var(--ok)" : health.health_pct >= 70 ? "var(--warn)" : "var(--bad)";
-  const healthKpi = document.getElementById("ov-health");
-  if (healthKpi) healthKpi.style.color = healthColor;
-  document.getElementById("ov-gauge-value").style.color = healthColor;
-  document.getElementById("ov-gauge").style.setProperty("--health-angle", `${health.health_pct * 3.6}deg`);
-  document.getElementById("ov-gauge").style.setProperty("--health-color", healthColor);
-
-  renderOverviewSeverity(summary.by_severity);
-  renderOverviewCritical(data.critical || []);
-  renderOverviewGroups(data.top_groups || []);
   renderResourcePressure(pressure);
+  renderProactiveOverview(data, pressure, criticalCount);
   hydrateIcons(document.getElementById("page-overview"));
+}
+
+function renderProactiveOverview(data, pressure, criticalCount) {
+  const summary = data.summary;
+  const firewalls = data.firewalls;
+  const downCount = Number((pressure.counts || {}).down || 0);
+  const connectivityCount = downCount + Number(firewalls.ipsec_down || 0);
+  const capacity = [
+    ...(pressure.cpu || []).map((row) => ({ ...row, type: "CPU", icon: "cpu" })),
+    ...(pressure.memory || []).map((row) => ({ ...row, type: "MEMÓRIA", icon: "memory" })),
+    ...(pressure.disk || []).map((row) => ({ ...row, type: "DISCO", icon: "disk" })),
+  ].filter((row) => row.value >= 70).sort((a, b) => b.value - a.value);
+
+  setOverviewText("ov-queue-critical", criticalCount);
+  setOverviewText("ov-queue-unack", summary.unacknowledged);
+  setOverviewText("ov-queue-capacity", capacity.length);
+  setOverviewText("ov-queue-connectivity", connectivityCount);
+  setOverviewText("ov-capacity-counter", `${capacity.length} risco${capacity.length === 1 ? "" : "s"}`);
+
+  renderPriorityActions(data, pressure, capacity);
+  renderCapacityRisks(capacity);
+  renderUnacknowledged((data.incidents || []).filter((item) => !item.acknowledged));
+}
+
+function renderPriorityActions(data, pressure, capacity) {
+  const actions = [];
+  (pressure.down_hosts || []).forEach((host) => actions.push({ level: 6, type: "HOST DOWN", title: host.host_name, detail: host.error || "Sem comunicação", icon: "serverOff", href: "/incidentes" }));
+  if (Number(data.firewalls.ipsec_down || 0) > 0) actions.push({ level: 5, type: "VPN IPSEC", title: `${data.firewalls.ipsec_down} túneis indisponíveis`, detail: "Verifique conectividade e negociação dos túneis", icon: "linkOff", href: "/firewalls" });
+  capacity.filter((row) => row.value >= 85).forEach((row) => actions.push({ level: 4, type: row.type, title: row.host_name, detail: `${row.value.toFixed(1)}% utilizado${row.detail ? ` · ${row.detail}` : ""}`, icon: row.icon, href: "#capacity-risks" }));
+  (data.critical || []).forEach((item) => actions.push({ level: item.severity, type: item.severity_name.toUpperCase(), title: item.host_name, detail: item.name, duration: item.duration, icon: "alertTriangle", href: "/incidentes" }));
+  actions.sort((a, b) => b.level - a.level);
+
+  const root = document.getElementById("ov-proactive-actions");
+  if (!actions.length) {
+    root.innerHTML = '<div class="proactive-empty"><span data-icon="checkCircle"></span><div><strong>Nenhuma ação imediata</strong><small>O ambiente não possui falhas críticas ou riscos de capacidade.</small></div></div>';
+    return;
+  }
+  root.innerHTML = actions.slice(0, 8).map((action, index) => `
+    <a class="proactive-action ${action.level >= 5 ? "is-critical" : "is-warning"}" href="${action.href}">
+      <span class="action-rank">${String(index + 1).padStart(2, "0")}</span>
+      <span class="action-icon" data-icon="${action.icon}"></span>
+      <span class="action-copy"><small>${escapeHtml(action.type)}</small><strong>${escapeHtml(action.title)}</strong><span>${escapeHtml(action.detail)}</span></span>
+      ${action.duration ? `<span class="action-duration">${escapeHtml(action.duration)}</span>` : ""}
+      <b>→</b>
+    </a>`).join("");
+}
+
+function renderCapacityRisks(items) {
+  const root = document.getElementById("ov-capacity-risks");
+  if (!items.length) {
+    root.innerHTML = '<div class="proactive-empty"><span data-icon="checkCircle"></span><div><strong>Capacidade sob controle</strong><small>Nenhum recurso ultrapassou 70%.</small></div></div>';
+    return;
+  }
+  root.innerHTML = items.slice(0, 10).map((item) => `
+    <div class="capacity-risk ${item.value >= 85 ? "is-critical" : "is-warning"}">
+      <span class="capacity-type" data-icon="${item.icon}"></span>
+      <div><small>${item.type}</small><strong>${escapeHtml(item.host_name)}</strong>${pressureBar(item.value)}</div>
+      <b>${item.value.toFixed(1)}%</b>
+    </div>`).join("");
+}
+
+function renderUnacknowledged(items) {
+  const root = document.getElementById("ov-unack-list");
+  const sorted = [...items].sort((a, b) => b.severity - a.severity || Number(a.clock) - Number(b.clock));
+  if (!sorted.length) {
+    root.innerHTML = '<div class="proactive-empty"><span data-icon="checkCircle"></span><div><strong>Fila reconhecida</strong><small>Não existem incidentes aguardando reconhecimento.</small></div></div>';
+    return;
+  }
+  root.innerHTML = sorted.slice(0, 8).map((item) => `
+    <a class="unack-item" href="/incidentes">
+      <span class="sev-solid sev-solid-${item.severity_name}">${escapeHtml(item.severity_name)}</span>
+      <span><strong>${escapeHtml(item.host_name)}</strong><small>${escapeHtml(item.name)}</small></span>
+      <b>${escapeHtml(item.duration)}</b>
+    </a>`).join("");
 }
 
 function resourceState(cardName, count) {
