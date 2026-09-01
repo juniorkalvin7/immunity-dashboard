@@ -1097,6 +1097,9 @@ tbody tr:hover td { background: rgba(24, 183, 241, .035); }
 .resource-kpi.has-problem { border-left-color: var(--bad); background: linear-gradient(145deg, rgba(49,23,29,.92), rgba(16,19,27,.96)); }
 .resource-kpi.has-problem .overview-kpi-icon { color: var(--bad); background: rgba(229,72,77,.13); }
 .resource-kpi.has-problem strong { color: #ff6267; }
+.resource-kpi.has-warning { border-left-color: var(--warn); background: linear-gradient(145deg, rgba(48,37,20,.72), rgba(16,22,28,.96)); }
+.resource-kpi.has-warning .overview-kpi-icon { color: var(--warn); background: rgba(232,161,61,.12); }
+.resource-kpi.has-warning strong { color: var(--warn); }
 
 .pressure-panel { padding-bottom: 16px; }
 .pressure-threshold { color: var(--bad); padding: 4px 8px; border-radius: 4px; background: rgba(229,72,77,.1); font: 700 9px var(--mono); }
