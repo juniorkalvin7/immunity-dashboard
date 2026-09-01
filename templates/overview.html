@@ -9,15 +9,15 @@
   <div class="overview-kpis">
     <article class="overview-kpi resource-kpi" data-resource-status="cpu">
       <span class="overview-kpi-icon" data-icon="cpu"></span>
-      <div><span class="overview-kpi-label">CPU crítica</span><strong id="ov-cpu-critical">–</strong><small id="ov-cpu-detail">Hosts acima de 85%</small></div>
+      <div><span class="overview-kpi-label">Maior uso de CPU</span><strong id="ov-cpu-critical">–</strong><small id="ov-cpu-detail">Aguardando coleta</small></div>
     </article>
     <article class="overview-kpi resource-kpi" data-resource-status="memory">
       <span class="overview-kpi-icon" data-icon="memory"></span>
-      <div><span class="overview-kpi-label">Memória crítica</span><strong id="ov-memory-critical">–</strong><small id="ov-memory-detail">Hosts acima de 85%</small></div>
+      <div><span class="overview-kpi-label">Maior uso de memória</span><strong id="ov-memory-critical">–</strong><small id="ov-memory-detail">Aguardando coleta</small></div>
     </article>
     <article class="overview-kpi resource-kpi" data-resource-status="disk">
       <span class="overview-kpi-icon" data-icon="disk"></span>
-      <div><span class="overview-kpi-label">Disco crítico</span><strong id="ov-disk-critical">–</strong><small id="ov-disk-detail">Hosts acima de 85%</small></div>
+      <div><span class="overview-kpi-label">Maior uso de disco</span><strong id="ov-disk-critical">–</strong><small id="ov-disk-detail">Aguardando coleta</small></div>
     </article>
     <article class="overview-kpi resource-kpi overview-kpi-critical" data-resource-status="down">
       <span class="overview-kpi-icon" data-icon="serverOff"></span>
@@ -26,7 +26,7 @@
   </div>
 
   <article class="panel pressure-panel">
-    <div class="panel-title-row"><div><h2>Pressão de recursos</h2><span>Os maiores consumos do ambiente, ordenados por criticidade</span></div><span class="pressure-threshold">CRÍTICO ≥ 85%</span></div>
+    <div class="panel-title-row"><div><h2>Pressão de recursos</h2><span>Top de consumo sempre visível; avisos e críticos aparecem primeiro</span></div><span class="pressure-threshold">AVISO ≥ 70% · CRÍTICO ≥ 85%</span></div>
     <div class="pressure-grid">
       <section class="pressure-column"><h3><span data-icon="cpu"></span>CPU</h3><div id="ov-pressure-cpu"></div></section>
       <section class="pressure-column"><h3><span data-icon="memory"></span>MEMÓRIA</h3><div id="ov-pressure-memory"></div></section>
