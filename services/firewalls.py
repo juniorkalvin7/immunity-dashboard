@@ -1,5 +1,6 @@
 """Sophos firewall fleet: SNMP health, IPsec tunnels, SSL VPN live users."""
 import json
+import re
 import time
 
 import zbx
@@ -21,6 +22,7 @@ ITEM_KEYS = [
 
 SSLVPN_RAW_PREFIX = "sophos_webadmin_sslvpn.py"
 EXTERNAL_CHECK_TYPE = 10
+IPSEC_TUNNEL_RE = re.compile(r"ipsec tunnel\s+(.+?)\s+is down", re.IGNORECASE)
 
 
 def _fmt_uptime(seconds) -> str:
@@ -122,6 +124,46 @@ def get_sslvpn_sessions(hosts: list[dict]) -> list[dict]:
         for user in payload["users"]:
             sessions.append({"host_name": host_name.get(it["hostid"], "—"), **user})
     return sessions
+
+
+def get_ipsec_tunnels(hosts: list[dict]) -> list[dict]:
+    """Return every named IPsec tunnel trigger, including healthy tunnels."""
+    hostids = [host["hostid"] for host in hosts]
+    if not hostids:
+        return []
+    triggers = zbx.call(
+        "trigger.get",
+        {
+            "output": ["triggerid", "description", "value", "priority", "lastchange", "state"],
+            "hostids": hostids,
+            "monitored": True,
+            "skipDependent": False,
+            "expandDescription": True,
+            "selectHosts": ["hostid", "name"],
+        },
+    )
+    tunnels = []
+    for trigger in triggers:
+        match = IPSEC_TUNNEL_RE.search(trigger.get("description", ""))
+        if not match:
+            continue
+        trigger_hosts = trigger.get("hosts") or []
+        if not trigger_hosts:
+            continue
+        status = "unknown" if str(trigger.get("state")) == "1" else ("down" if str(trigger.get("value")) == "1" else "up")
+        changed = int(trigger.get("lastchange") or 0)
+        tunnels.append(
+            {
+                "triggerid": str(trigger["triggerid"]),
+                "hostid": trigger_hosts[0].get("hostid"),
+                "host_name": trigger_hosts[0].get("name", "—"),
+                "tunnel_name": match.group(1).strip(),
+                "status": status,
+                "lastchange": changed,
+                "duration": _fmt_uptime(max(0, int(time.time()) - changed)) if changed else "—",
+            }
+        )
+    return sorted(tunnels, key=lambda row: (row["status"] != "down", row["host_name"], row["tunnel_name"]))
 
 
 def get_firewall_problems(hosts: list[dict]) -> list[dict]:

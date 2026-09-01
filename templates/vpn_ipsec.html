@@ -13,13 +13,11 @@
     <article class="panel vpn-kpi {{ 'is-critical' if ipsec_problems else '' }}"><span data-icon="alertTriangle"></span><div><strong id="ipsec-problem-total">{{ ipsec_problems | length }}</strong><small>Problemas ativos</small></div></article>
   </div>
   <article class="panel">
-    <div class="panel-title-row"><div><h2>Atividade por firewall</h2><span>Totais reais informados pelo Sophos via Zabbix</span></div><span class="action-live"><i></i> TEMPO REAL</span></div>
-    <table class="fw-table"><thead><tr><th>Firewall</th><th>Modelo</th><th>Firmware</th><th>Uptime</th><th>VPN UP</th><th>VPN DOWN</th><th>Estado</th></tr></thead><tbody id="ipsec-firewall-rows">{% for fw in fleet %}<tr><td class="fw-name">{{ fw.name }}</td><td>{{ fw.model }}</td><td class="mono-dim">{{ fw.firmware }}</td><td class="mono-dim">{{ fw.uptime }}</td><td><span class="vpn-number is-up">{{ fw.ipsec_up or 0 }}</span></td><td><span class="vpn-number {{ 'is-down' if fw.ipsec_down else '' }}">{{ fw.ipsec_down or 0 }}</span></td><td><span class="vpn-state {{ 'is-down' if fw.ipsec_down else 'is-up' }}">{{ 'ATENÇÃO' if fw.ipsec_down else 'OK' }}</span></td></tr>{% else %}<tr><td colspan="7" class="empty">Nenhum firewall encontrado</td></tr>{% endfor %}</tbody></table>
-  </article>
-  <article class="panel">
-    <div class="panel-title-row"><div><h2>Túneis que exigem atenção</h2><span>Falhas IPsec identificadas nominalmente pelos triggers</span></div><span class="capacity-counter">{{ ipsec_problems | length }} ativos</span></div>
-    <table class="problems-table"><thead><tr><th>Severidade</th><th>Firewall</th><th>Túnel / problema</th><th>Desde</th></tr></thead><tbody id="ipsec-problem-rows">{% for p in ipsec_problems %}<tr><td>{{ severity_badge(p.severity_name) }}</td><td class="fw-name">{{ p.host_name }}</td><td>{{ p.name }}</td><td class="mono-dim">{{ p.since }}</td></tr>{% else %}<tr><td colspan="4" class="empty">Todos os túneis estão operacionais</td></tr>{% endfor %}</tbody></table>
+    <div class="panel-title-row"><div><h2>Túneis IPsec</h2><span>Catálogo individual de VPNs operacionais e indisponíveis</span></div><span class="action-live"><i></i> TEMPO REAL</span></div>
+    <div class="filter-bar vpn-filter"><div class="search-wrap"><span class="search-icon" data-icon="search"></span><input id="ipsec-search" type="search" placeholder="Buscar túnel" autocomplete="off"></div><select id="ipsec-firewall-filter"><option value="">Todos os firewalls</option></select><select id="ipsec-status-filter"><option value="">UP e DOWN</option><option value="up">Somente UP</option><option value="down">Somente DOWN</option><option value="unknown">Desconhecido</option></select><span class="queue-count" id="ipsec-result-count">{{ ipsec_tunnels | length }} túneis</span></div>
+    <table class="fw-table"><thead><tr><th>Estado</th><th>Firewall</th><th>Túnel IPsec</th><th>Tempo no estado</th></tr></thead><tbody id="ipsec-tunnel-rows"><tr><td colspan="4" class="loading">Carregando túneis…</td></tr></tbody></table>
   </article>
 </section>
+<script id="ipsec-data" type="application/json">{{ ipsec_tunnels | tojson }}</script>
 {% endblock %}
 {% block scripts %}<script src="{{ url_for('static', filename='js/vpn_activities.js') }}"></script>{% endblock %}

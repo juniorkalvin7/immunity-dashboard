@@ -233,6 +233,7 @@ def _firewalls_data() -> dict:
         "fleet": fleet,
         "summary": firewalls.get_summary(fleet),
         "sslvpn_sessions": firewalls.get_sslvpn_sessions(hosts),
+        "ipsec_tunnels": firewalls.get_ipsec_tunnels(hosts),
         "problems": firewalls.get_firewall_problems(hosts),
     }
 
