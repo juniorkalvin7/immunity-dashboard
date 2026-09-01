@@ -114,9 +114,30 @@ async function refreshStatusBar() {
   }
 }
 
+function setupSidebarToggle() {
+  const button = document.getElementById("sidebar-toggle");
+  if (!button) return;
+  const storageKey = "antigen.sidebar.collapsed";
+
+  function apply(collapsed) {
+    document.body.classList.toggle("sidebar-collapsed", collapsed);
+    button.setAttribute("aria-expanded", String(!collapsed));
+    button.setAttribute("aria-label", collapsed ? "Expandir menu" : "Recolher menu");
+    button.title = collapsed ? "Expandir menu" : "Recolher menu";
+  }
+
+  apply(localStorage.getItem(storageKey) === "1");
+  button.addEventListener("click", () => {
+    const collapsed = !document.body.classList.contains("sidebar-collapsed");
+    apply(collapsed);
+    localStorage.setItem(storageKey, collapsed ? "1" : "0");
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   hydrateByteCells();
   hydrateIcons();
+  setupSidebarToggle();
   refreshStatusBar();
   setInterval(refreshStatusBar, REFRESH_MS);
 });
