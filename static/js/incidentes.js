@@ -83,18 +83,20 @@ function getSorted(list) {
 // ---------- rendering: top panels ----------
 
 function renderSummary(summary) {
-  document.getElementById("inc-total").textContent = summary.total;
+  const badge = document.getElementById("notif-badge");
+  if (badge) {
+    badge.hidden = summary.unacknowledged === 0;
+    badge.textContent = summary.unacknowledged > 99 ? "99+" : summary.unacknowledged;
+  }
+  const totalEl = document.getElementById("inc-total");
+  if (!totalEl) return;
+  totalEl.textContent = summary.total;
   document.getElementById("inc-disaster").textContent = summary.by_severity.disaster;
   document.getElementById("inc-high").textContent = summary.by_severity.high;
   document.getElementById("inc-average").textContent = summary.by_severity.average;
   document.getElementById("inc-warning").textContent = summary.by_severity.warning;
   document.getElementById("inc-unack").textContent = summary.unacknowledged;
 
-  const badge = document.getElementById("notif-badge");
-  if (badge) {
-    badge.hidden = summary.unacknowledged === 0;
-    badge.textContent = summary.unacknowledged > 99 ? "99+" : summary.unacknowledged;
-  }
 }
 
 function renderTrends(trend) {
@@ -120,6 +122,7 @@ function setTrend(elId, count) {
 }
 
 function renderPriority(summary) {
+  if (!document.getElementById("priority-bar")) return;
   const segments = [
     { key: "disaster", label: "Disaster", color: "var(--sev-disaster)" },
     { key: "high", label: "High", color: "var(--sev-high)" },
@@ -146,7 +149,7 @@ function renderPriority(summary) {
 }
 
 function renderHealth(health) {
-  if (!health) return;
+  if (!health || !document.getElementById("health-pct")) return;
   document.getElementById("health-pct").textContent = health.health_pct + "%";
   document.getElementById("health-pct").style.color =
     health.health_pct >= 90 ? "var(--ok)" : health.health_pct >= 70 ? "var(--warn)" : "var(--bad)";
@@ -157,6 +160,7 @@ function renderHealth(health) {
 
 function renderAlertBanner(top) {
   const banner = document.getElementById("alert-banner");
+  if (!banner) return;
   if (!top) {
     banner.hidden = true;
     return;
@@ -359,7 +363,8 @@ function setupFilterBar() {
     });
   });
 
-  document.getElementById("alert-cta").addEventListener("click", () => {
+  const alertCta = document.getElementById("alert-cta");
+  if (alertCta) alertCta.addEventListener("click", () => {
     filters.severities = new Set(["disaster", "high"]);
     document.querySelectorAll(".sev-toggle").forEach((b) => {
       const sev = b.dataset.sev;

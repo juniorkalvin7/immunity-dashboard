@@ -22,23 +22,29 @@ def _safe_embed_json(data: dict) -> str:
 
 @app.route("/")
 def index():
-    return redirect(url_for("overview_page"))
+    return redirect(url_for("home_page"))
+
+
+@app.route("/home")
+def home_page():
+    overview_data = _overview_data()
+    incident_data = _incidentes_data()
+    return render_template(
+        "home.html",
+        active_page="home",
+        overview_json=_safe_embed_json(overview_data),
+        incidentes_json=_safe_embed_json(incident_data),
+    )
 
 
 @app.route("/overview")
 def overview_page():
-    data = _overview_data()
-    return render_template(
-        "overview.html", active_page="overview", initial_json=_safe_embed_json(data)
-    )
+    return redirect(url_for("home_page"))
 
 
 @app.route("/incidentes")
 def incidentes_page():
-    data = _incidentes_data()
-    return render_template(
-        "incidentes.html", active_page="incidentes", initial_json=_safe_embed_json(data)
-    )
+    return redirect(url_for("home_page", _anchor="incident-queue"))
 
 
 @app.route("/recursos")

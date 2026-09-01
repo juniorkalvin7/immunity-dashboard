@@ -25,15 +25,9 @@
       </span>
     </div>
     <ul class="nav-list">
+      <li><a href="{{ url_for('home_page') }}" class="nav-link {{ 'active' if active_page == 'home' }}"><span data-icon="overview"></span><span class="nav-label">Home</span></a></li>
       <li class="nav-section">MONITORAMENTO</li>
-      <li><a href="{{ url_for('overview_page') }}" class="nav-link {{ 'active' if active_page == 'overview' }}"><span data-icon="overview"></span><span class="nav-label">Visão Geral</span></a></li>
-      <li><a href="{{ url_for('incidentes_page') }}" class="nav-link {{ 'active' if active_page == 'incidentes' }}"><span data-icon="bell"></span><span class="nav-label">Incidentes</span></a></li>
       <li><a href="{{ url_for('recursos_page') }}" class="nav-link {{ 'active' if active_page == 'recursos' }}"><span data-icon="server"></span><span class="nav-label">Recursos</span></a></li>
-      <li><a href="{{ url_for('firewalls_page') }}" class="nav-link {{ 'active' if active_page == 'firewalls' }}"><span data-icon="shield"></span><span class="nav-label">Firewalls Sophos</span></a></li>
-      <li><span class="nav-link is-disabled"><span data-icon="monitor"></span><span class="nav-label">Hosts</span></span></li>
-      <li class="nav-section nav-section-spaced">GESTÃO</li>
-      <li><span class="nav-link is-disabled"><span data-icon="report"></span><span class="nav-label">Relatórios</span></span></li>
-      <li><span class="nav-link is-disabled"><span data-icon="settings"></span><span class="nav-label">Configurações</span></span></li>
     </ul>
     <div class="sidebar-status">
       <div><span id="conn-dot" class="dot dot-ok"></span> Zabbix conectado</div>

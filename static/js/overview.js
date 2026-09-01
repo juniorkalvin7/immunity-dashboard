@@ -45,10 +45,10 @@ function renderProactiveOverview(data, pressure, criticalCount) {
 
 function renderPriorityActions(data, pressure, capacity) {
   const actions = [];
-  (pressure.down_hosts || []).forEach((host) => actions.push({ level: 6, type: "HOST DOWN", title: host.host_name, detail: host.error || "Sem comunicação", icon: "serverOff", href: "/incidentes" }));
+  (pressure.down_hosts || []).forEach((host) => actions.push({ level: 6, type: "HOST DOWN", title: host.host_name, detail: host.error || "Sem comunicação", icon: "serverOff", href: "/home#incident-queue" }));
   if (Number(data.firewalls.ipsec_down || 0) > 0) actions.push({ level: 5, type: "VPN IPSEC", title: `${data.firewalls.ipsec_down} túneis indisponíveis`, detail: "Verifique conectividade e negociação dos túneis", icon: "linkOff", href: "/firewalls" });
   capacity.filter((row) => row.value >= 85).forEach((row) => actions.push({ level: 4, type: row.type, title: row.host_name, detail: `${row.value.toFixed(1)}% utilizado${row.detail ? ` · ${row.detail}` : ""}`, icon: row.icon, href: "#capacity-risks" }));
-  (data.critical || []).forEach((item) => actions.push({ level: item.severity, type: item.severity_name.toUpperCase(), title: item.host_name, detail: item.name, duration: item.duration, icon: "alertTriangle", href: "/incidentes" }));
+  (data.critical || []).forEach((item) => actions.push({ level: item.severity, type: item.severity_name.toUpperCase(), title: item.host_name, detail: item.name, duration: item.duration, icon: "alertTriangle", href: "/home#incident-queue" }));
   actions.sort((a, b) => b.level - a.level);
 
   const root = document.getElementById("ov-proactive-actions");
@@ -88,7 +88,7 @@ function renderUnacknowledged(items) {
     return;
   }
   root.innerHTML = sorted.slice(0, 8).map((item) => `
-    <a class="unack-item" href="/incidentes">
+    <a class="unack-item" href="/home#incident-queue">
       <span class="sev-solid sev-solid-${item.severity_name}">${escapeHtml(item.severity_name)}</span>
       <span><strong>${escapeHtml(item.host_name)}</strong><small>${escapeHtml(item.name)}</small></span>
       <b>${escapeHtml(item.duration)}</b>
@@ -179,7 +179,7 @@ function renderOverviewCritical(items) {
     return;
   }
   root.innerHTML = items.map((item) => `
-    <a class="overview-critical-item" href="/incidentes" title="${escapeHtml(item.name)}">
+    <a class="overview-critical-item" href="/home#incident-queue" title="${escapeHtml(item.name)}">
       <span class="sev-solid sev-solid-${item.severity_name}">${escapeHtml(item.severity_name)}</span>
       <span class="overview-critical-copy"><strong>${escapeHtml(item.host_name)}</strong><small>${escapeHtml(item.name)}</small></span>
       <span class="overview-critical-duration">${escapeHtml(item.duration)}</span>

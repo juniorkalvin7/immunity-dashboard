@@ -1185,6 +1185,10 @@ html[data-theme="light"] .severity-stack, html[data-theme="light"] .overview-gro
 html[data-theme="light"] .tag-pill { color: #405969; background: #e6edf2; }
 html[data-theme="light"] .mono-dim, html[data-theme="light"] .resource-group, html[data-theme="light"] .resource-info, html[data-theme="light"] .pressure-host { color: #4e6575; }
 
+.home-incidents { scroll-margin-top: 24px; margin-top: 18px; }
+.home-incidents .queue-header > div { display: flex; align-items: baseline; gap: 12px; }
+.page-home .breadcrumb { display: none; }
+
 @media (max-width: 1450px) {
   .stat-card { padding: 12px; gap: 9px; }
   .stat-icon { width: 30px; height: 30px; flex-basis: 30px; }
