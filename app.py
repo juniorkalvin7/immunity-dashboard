@@ -41,6 +41,14 @@ def incidentes_page():
     )
 
 
+@app.route("/recursos")
+def recursos_page():
+    data = _recursos_data()
+    return render_template(
+        "recursos.html", active_page="recursos", initial_json=_safe_embed_json(data)
+    )
+
+
 @app.route("/firewalls")
 def firewalls_page():
     data = _firewalls_data()
@@ -50,6 +58,11 @@ def firewalls_page():
 @app.route("/api/incidentes")
 def api_incidentes():
     return jsonify(_incidentes_data())
+
+
+@app.route("/api/recursos")
+def api_recursos():
+    return jsonify(_recursos_data())
 
 
 @app.route("/api/overview")
@@ -106,6 +119,39 @@ def _incidentes_data() -> dict:
         "trend_24h": incidents.get_new_last_24h(),
         "health": incidents.get_environment_health(incident_list),
         "top_critical": incidents.get_top_critical(incident_list),
+    }
+
+
+def _recursos_data() -> dict:
+    records = incidents.get_incidents()
+    resource_terms = (
+        "cpu", "memory", "memória", "memoria", "disk", "disco", "storage",
+        "filesystem", "file system", "swap", "load", "interface", "port",
+        "vpn", "ipsec", "service", "serviço", "servico", "unreachable",
+        "offline", "not running", "down",
+    )
+
+    enriched = []
+    for record in records:
+        searchable = " ".join(
+            [record.get("name", ""), record.get("host_name", ""), *(record.get("tags") or [])]
+        ).lower()
+        enriched.append(
+            {
+                **record,
+                "is_resource_problem": any(term in searchable for term in resource_terms),
+            }
+        )
+
+    return {
+        "resources": enriched,
+        "groups": sorted({row["group_name"] for row in enriched if row["group_name"] != "—"}),
+        "summary": {
+            "total": len(enriched),
+            "unhandled": sum(not row["acknowledged"] for row in enriched),
+            "resource_problems": sum(row["is_resource_problem"] for row in enriched),
+            "critical": sum(row["severity"] >= 4 for row in enriched),
+        },
     }
 
 
