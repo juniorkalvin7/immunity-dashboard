@@ -65,7 +65,7 @@ def _top_cpu() -> list[dict]:
             continue
         seen.add(hostid)
         rows.append(_row(item, value))
-    return sorted(rows, key=lambda row: row["value"], reverse=True)[:LIMIT_PER_RESOURCE]
+    return sorted(rows, key=lambda row: row["value"], reverse=True)
 
 
 def _top_memory() -> list[dict]:
@@ -82,7 +82,7 @@ def _top_memory() -> list[dict]:
         else:
             continue
         rows_by_host[item.get("hostid")] = _row(item, used)
-    return sorted(rows_by_host.values(), key=lambda row: row["value"], reverse=True)[:LIMIT_PER_RESOURCE]
+    return sorted(rows_by_host.values(), key=lambda row: row["value"], reverse=True)
 
 
 def _top_disk() -> list[dict]:
@@ -99,7 +99,7 @@ def _top_disk() -> list[dict]:
         current = rows_by_host.get(item.get("hostid"))
         if current is None or row["value"] > current["value"]:
             rows_by_host[item.get("hostid")] = row
-    return sorted(rows_by_host.values(), key=lambda row: row["value"], reverse=True)[:LIMIT_PER_RESOURCE]
+    return sorted(rows_by_host.values(), key=lambda row: row["value"], reverse=True)
 
 
 def _down_hosts() -> list[dict]:
@@ -130,9 +130,9 @@ def get_resource_pressure() -> dict:
     disk = _top_disk()
     down = _down_hosts()
     return {
-        "cpu": cpu,
-        "memory": memory,
-        "disk": disk,
+        "cpu": cpu[:LIMIT_PER_RESOURCE],
+        "memory": memory[:LIMIT_PER_RESOURCE],
+        "disk": disk[:LIMIT_PER_RESOURCE],
         "down_hosts": down[:LIMIT_PER_RESOURCE],
         "counts": {
             "cpu": sum(row["value"] >= CRITICAL_THRESHOLD for row in cpu),
