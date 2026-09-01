@@ -14,6 +14,7 @@ function renderOverview(data) {
   const health = data.health;
   const firewalls = data.firewalls;
   const criticalCount = (summary.by_severity.disaster || 0) + (summary.by_severity.high || 0);
+  const pressure = data.resources || { cpu: [], memory: [], disk: [], down_hosts: [], counts: {} };
 
   setOverviewText("ov-health", health.health_pct + "%");
   setOverviewText("ov-health-detail", `${health.healthy_hosts} de ${health.total_hosts} hosts saudáveis`);
@@ -33,7 +34,8 @@ function renderOverview(data) {
   setOverviewText("ov-critical-counter", `${criticalCount} crítico${criticalCount === 1 ? "" : "s"}`);
 
   const healthColor = health.health_pct >= 90 ? "var(--ok)" : health.health_pct >= 70 ? "var(--warn)" : "var(--bad)";
-  document.getElementById("ov-health").style.color = healthColor;
+  const healthKpi = document.getElementById("ov-health");
+  if (healthKpi) healthKpi.style.color = healthColor;
   document.getElementById("ov-gauge-value").style.color = healthColor;
   document.getElementById("ov-gauge").style.setProperty("--health-angle", `${health.health_pct * 3.6}deg`);
   document.getElementById("ov-gauge").style.setProperty("--health-color", healthColor);
@@ -41,7 +43,57 @@ function renderOverview(data) {
   renderOverviewSeverity(summary.by_severity);
   renderOverviewCritical(data.critical || []);
   renderOverviewGroups(data.top_groups || []);
+  renderResourcePressure(pressure);
   hydrateIcons(document.getElementById("page-overview"));
+}
+
+function resourceState(cardName, count) {
+  const card = document.querySelector(`[data-resource-status="${cardName}"]`);
+  if (!card) return;
+  card.classList.toggle("has-problem", Number(count) > 0);
+  card.classList.toggle("is-healthy", Number(count) === 0);
+}
+
+function pressureBar(value) {
+  const segments = 28;
+  const active = Math.round(Math.max(0, Math.min(100, value)) / 100 * segments);
+  return `<span class="segment-bar" aria-label="${value}%">${Array.from({ length: segments }, (_, i) => `<i class="${i < active ? "is-active" : ""}"></i>`).join("")}</span>`;
+}
+
+function pressureRows(rows, kind) {
+  if (!rows.length) return '<div class="pressure-empty">Sem dados disponíveis</div>';
+  return rows.map((row) => `
+    <div class="pressure-row ${row.value >= 85 ? "is-critical" : row.value >= 70 ? "is-warning" : ""}">
+      <span class="pressure-host" title="${escapeHtml(row.host_name)}">${escapeHtml(row.host_name)}</span>
+      ${pressureBar(row.value)}
+      <strong>${row.value.toFixed(1)}%</strong>
+      ${kind === "disk" && row.detail ? `<small title="${escapeHtml(row.detail)}">${escapeHtml(row.detail)}</small>` : ""}
+    </div>
+  `).join("");
+}
+
+function renderResourcePressure(pressure) {
+  const counts = pressure.counts || {};
+  setOverviewText("ov-cpu-critical", counts.cpu || 0);
+  setOverviewText("ov-memory-critical", counts.memory || 0);
+  setOverviewText("ov-disk-critical", counts.disk || 0);
+  setOverviewText("ov-hosts-down", counts.down || 0);
+  setOverviewText("ov-cpu-detail", `${(pressure.cpu || []).length} hosts analisados`);
+  setOverviewText("ov-memory-detail", `${(pressure.memory || []).length} hosts analisados`);
+  setOverviewText("ov-disk-detail", `${(pressure.disk || []).length} hosts analisados`);
+  setOverviewText("ov-down-detail", counts.down ? "Exigem ação imediata" : "Todos comunicando");
+  resourceState("cpu", counts.cpu || 0);
+  resourceState("memory", counts.memory || 0);
+  resourceState("disk", counts.disk || 0);
+  resourceState("down", counts.down || 0);
+
+  document.getElementById("ov-pressure-cpu").innerHTML = pressureRows(pressure.cpu || [], "cpu");
+  document.getElementById("ov-pressure-memory").innerHTML = pressureRows(pressure.memory || [], "memory");
+  document.getElementById("ov-pressure-disk").innerHTML = pressureRows(pressure.disk || [], "disk");
+  const downRoot = document.getElementById("ov-pressure-down");
+  downRoot.innerHTML = (pressure.down_hosts || []).length
+    ? pressure.down_hosts.map((host) => `<div class="down-host-row"><span class="down-pulse"></span><div><strong>${escapeHtml(host.host_name)}</strong><small title="${escapeHtml(host.error)}">${escapeHtml(host.error)}</small></div><b>DOWN</b></div>`).join("")
+    : '<div class="pressure-empty pressure-empty-ok"><span data-icon="checkCircle"></span>Todos os hosts estão comunicando</div>';
 }
 
 function renderOverviewSeverity(counts) {
