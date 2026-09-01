@@ -98,6 +98,18 @@ def acknowledge_many(eventids: list[str], message: str = "") -> None:
     zbx.call("event.acknowledge", params)
 
 
+def unacknowledge_many(eventids: list[str], message: str = "") -> None:
+    """Return acknowledged events to the unhandled operational queue."""
+    clean_ids = [str(eventid) for eventid in eventids if str(eventid).isdigit()]
+    if not clean_ids:
+        raise ValueError("Nenhum evento selecionado")
+    action = 16 | (4 if message else 0)
+    params = {"eventids": clean_ids, "action": action}
+    if message:
+        params["message"] = message
+    zbx.call("event.acknowledge", params)
+
+
 def get_event_details(eventid: str, hours: int = 24) -> dict:
     """Operational detail, audit timeline and the primary trigger item history."""
     hours = max(1, min(int(hours), 24 * 31))
@@ -161,12 +173,14 @@ def get_event_details(eventid: str, hours: int = 24) -> dict:
         }
     ]
     for ack in event.get("acknowledges") or []:
+        action = int(ack.get("action", 0))
+        entry_type = "acknowledge" if action & 2 else "unacknowledge" if action & 16 else "comment"
         timeline.append(
             {
                 "clock": int(ack.get("clock", 0)),
-                "type": "acknowledge" if int(ack.get("action", 0)) & 2 else "comment",
+                "type": entry_type,
                 "user": ack.get("name") or ack.get("username") or "Operador",
-                "message": ack.get("message") or "Evento reconhecido",
+                "message": ack.get("message") or ("Evento desreconhecido" if entry_type == "unacknowledge" else "Evento reconhecido"),
             }
         )
     timeline.sort(key=lambda row: row["clock"], reverse=True)
@@ -220,6 +234,46 @@ def schedule_maintenance(hostids: list[str], minutes: int, name: str, descriptio
             "timeperiods": [{"timeperiod_type": 0, "start_date": start, "period": minutes * 60}],
         },
     )
+
+
+def get_host_maintenances(hostid: str | None) -> list[dict]:
+    """Active maintenance windows currently affecting a host."""
+    if not hostid:
+        return []
+    now = int(time.time())
+    rows = zbx.call(
+        "maintenance.get",
+        {
+            "output": ["maintenanceid", "name", "description", "active_since", "active_till", "maintenance_type"],
+            "hostids": [str(hostid)],
+            "selectHosts": ["hostid", "name"],
+            "sortfield": "active_till",
+            "sortorder": "ASC",
+        },
+    )
+    result = []
+    for row in rows:
+        start = int(row.get("active_since") or 0)
+        end = int(row.get("active_till") or 0)
+        if start <= now <= end:
+            result.append(
+                {
+                    "maintenanceid": str(row["maintenanceid"]),
+                    "name": row.get("name", "Manutenção"),
+                    "description": row.get("description", ""),
+                    "active_since": start,
+                    "active_till": end,
+                    "host_count": len(row.get("hosts") or []),
+                }
+            )
+    return result
+
+
+def remove_maintenances(maintenanceids: list[str]) -> None:
+    clean_ids = sorted({str(value) for value in maintenanceids if str(value).isdigit()})
+    if not clean_ids:
+        raise ValueError("Nenhuma manutenção selecionada")
+    zbx.call("maintenance.delete", clean_ids)
 
 
 def get_summary(incidents: list[dict]) -> dict:

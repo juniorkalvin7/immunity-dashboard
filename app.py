@@ -122,8 +122,11 @@ def api_recurso_trigger_details(triggerid):
     eventid = request.args.get("eventid")
     try:
         if eventid:
-            return jsonify(incidents.get_event_details(eventid, request.args.get("hours", 24)))
-        return jsonify(resources.get_trigger_details(triggerid, request.args.get("hours", 24)))
+            detail = incidents.get_event_details(eventid, request.args.get("hours", 24))
+        else:
+            detail = resources.get_trigger_details(triggerid, request.args.get("hours", 24))
+        detail["maintenances"] = incidents.get_host_maintenances(detail.get("hostid"))
+        return jsonify(detail)
     except Exception as exc:  # noqa: BLE001
         return jsonify({"ok": False, "error": str(exc)}), 502
 
@@ -133,6 +136,16 @@ def api_recursos_ack():
     payload = request.get_json(silent=True) or {}
     try:
         incidents.acknowledge_many(payload.get("eventids") or [], payload.get("message", ""))
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)}), 502
+    return jsonify({"ok": True})
+
+
+@app.route("/api/recursos/unack", methods=["POST"])
+def api_recursos_unack():
+    payload = request.get_json(silent=True) or {}
+    try:
+        incidents.unacknowledge_many(payload.get("eventids") or [], payload.get("message", ""))
     except Exception as exc:  # noqa: BLE001
         return jsonify({"ok": False, "error": str(exc)}), 502
     return jsonify({"ok": True})
@@ -149,6 +162,16 @@ def api_recursos_maintenance():
     except Exception as exc:  # noqa: BLE001
         return jsonify({"ok": False, "error": str(exc)}), 502
     return jsonify({"ok": True, "result": result})
+
+
+@app.route("/api/recursos/maintenance/remove", methods=["POST"])
+def api_recursos_remove_maintenance():
+    payload = request.get_json(silent=True) or {}
+    try:
+        incidents.remove_maintenances(payload.get("maintenanceids") or [])
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)}), 502
+    return jsonify({"ok": True})
 
 
 def _incidentes_data() -> dict:
