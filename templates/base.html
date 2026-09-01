@@ -22,7 +22,7 @@
       <li class="nav-section">MONITORAMENTO</li>
       <li><a href="{{ url_for('overview_page') }}" class="nav-link {{ 'active' if active_page == 'overview' }}"><span data-icon="overview"></span><span class="nav-label">Visão Geral</span></a></li>
       <li><a href="{{ url_for('incidentes_page') }}" class="nav-link {{ 'active' if active_page == 'incidentes' }}"><span data-icon="bell"></span><span class="nav-label">Incidentes</span></a></li>
-      <li><span class="nav-link is-disabled"><span data-icon="server"></span><span class="nav-label">Infraestrutura</span></span></li>
+      <li><a href="{{ url_for('recursos_page') }}" class="nav-link {{ 'active' if active_page == 'recursos' }}"><span data-icon="server"></span><span class="nav-label">Recursos</span></a></li>
       <li><a href="{{ url_for('firewalls_page') }}" class="nav-link {{ 'active' if active_page == 'firewalls' }}"><span data-icon="shield"></span><span class="nav-label">Firewalls Sophos</span></a></li>
       <li><span class="nav-link is-disabled"><span data-icon="monitor"></span><span class="nav-label">Hosts</span></span></li>
       <li class="nav-section nav-section-spaced">GESTÃO</li>
