@@ -179,3 +179,19 @@ def get_resource_pressure() -> dict:
         },
         "threshold": CRITICAL_THRESHOLD,
     }
+
+
+def get_global_availability() -> dict:
+    """Small, cheap counters used by the global operations strip."""
+    count = _safe_call(
+        "item.get",
+        {"countOutput": True, "monitored": True, "filter": {"status": 0}},
+    )
+    try:
+        monitored_items = int(count)
+    except (TypeError, ValueError):
+        monitored_items = 0
+    return {
+        "down_hosts": len(_down_hosts()),
+        "monitored_items": monitored_items,
+    }
