@@ -9,7 +9,7 @@ import json
 
 from flask import Flask, jsonify, redirect, render_template, request, url_for
 
-from services import firewalls, incidents
+from services import firewalls, incidents, resources
 
 app = Flask(__name__)
 
@@ -124,6 +124,7 @@ def _overview_data() -> dict:
             {"name": name, "count": count}
             for name, count in sorted(group_counts.items(), key=lambda item: (-item[1], item[0]))[:5]
         ],
+        "resources": resources.get_resource_pressure(),
     }
 
 
