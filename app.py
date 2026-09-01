@@ -55,10 +55,25 @@ def recursos_page():
     )
 
 
+@app.route("/vpn-users")
+def vpn_users_page():
+    data = _firewalls_data()
+    return render_template("vpn_users.html", active_page="vpn_users", **data)
+
+
+@app.route("/vpn-ipsec")
+def vpn_ipsec_page():
+    data = _firewalls_data()
+    data["ipsec_problems"] = [
+        problem for problem in data["problems"]
+        if any(term in problem.get("name", "").lower() for term in ("ipsec", "tunnel", "vpn"))
+    ]
+    return render_template("vpn_ipsec.html", active_page="vpn_ipsec", **data)
+
+
 @app.route("/firewalls")
 def firewalls_page():
-    data = _firewalls_data()
-    return render_template("firewalls.html", active_page="firewalls", **data)
+    return redirect(url_for("vpn_ipsec_page"))
 
 
 @app.route("/api/incidentes")

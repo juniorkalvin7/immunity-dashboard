@@ -28,6 +28,8 @@
       <li><a href="{{ url_for('home_page') }}" class="nav-link {{ 'active' if active_page == 'home' }}"><span data-icon="overview"></span><span class="nav-label">Home</span></a></li>
       <li class="nav-section">MONITORAMENTO</li>
       <li><a href="{{ url_for('recursos_page') }}" class="nav-link {{ 'active' if active_page == 'recursos' }}"><span data-icon="server"></span><span class="nav-label">Recursos</span></a></li>
+      <li><a href="{{ url_for('vpn_users_page') }}" class="nav-link {{ 'active' if active_page == 'vpn_users' }}"><span data-icon="users"></span><span class="nav-label">VPN Users</span></a></li>
+      <li><a href="{{ url_for('vpn_ipsec_page') }}" class="nav-link {{ 'active' if active_page == 'vpn_ipsec' }}"><span data-icon="link"></span><span class="nav-label">VPN IPsec</span></a></li>
     </ul>
     <div class="sidebar-status">
       <div><span id="conn-dot" class="dot dot-ok"></span> Zabbix conectado</div>
