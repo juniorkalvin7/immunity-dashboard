@@ -975,6 +975,31 @@ html, body {
 }
 
 main { max-width: none; padding: 22px clamp(18px, 2.1vw, 38px) 32px; }
+.operations-strip {
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: -22px calc(clamp(18px, 2.1vw, 38px) * -1) 20px;
+  padding: 7px clamp(18px, 2.1vw, 38px);
+  border-bottom: 1px solid var(--border);
+  background: rgba(12, 25, 35, .97);
+  box-shadow: 0 8px 24px rgba(0,0,0,.13);
+}
+.strip-group { display: flex; align-items: center; gap: 9px; }
+.strip-group-icon { width: 48px; display: grid; place-items: center; gap: 1px; color: var(--text-dim); }
+.strip-group-icon > span, .strip-group-icon svg { width: 22px; height: 22px; }
+.strip-group-icon small { font: 700 8px var(--sans); letter-spacing: .08em; }
+.strip-count { min-width: 43px; display: grid; justify-items: center; gap: 1px; }
+.strip-count strong { width: 34px; height: 34px; display: grid; place-items: center; border: 2px solid currentColor; border-radius: 50%; color: var(--text-dim); background: rgba(255,255,255,.025); font: 700 11px var(--mono); }
+.strip-count small { color: var(--text-faint); font: 700 7px var(--sans); letter-spacing: .06em; }
+.strip-count.is-critical strong { color: #ff444a; }
+.strip-count.is-average strong { color: #ff9d2e; }
+.strip-count.is-warning strong { color: #e2c93b; }
+.strip-count.is-ok strong { color: #78c62d; border-color: #78c62d; background: rgba(120,198,45,.12); }
+.strip-divider { width: 1px; height: 34px; background: var(--border); }
+.strip-source { margin-left: auto; color: var(--text-faint); font: 9px var(--mono); letter-spacing: .06em; }
+.strip-source .dot { margin-right: 5px; }
 .breadcrumb { color: var(--accent); }
 .page-header-row h1 { font-size: clamp(22px, 1.65vw, 30px); letter-spacing: -.025em; }
 .page-sub { font-size: 13px; }
@@ -1051,6 +1076,8 @@ tbody tr:hover td { background: rgba(24, 183, 241, .035); }
   .health-panel { grid-template-columns: 180px 1fr; }
   .problems-table { min-width: 1050px; }
   .panel:has(.problems-table) { overflow-x: auto; }
+  .operations-strip { gap: 10px; overflow-x: auto; }
+  .strip-source { display: none; }
 }
 
 @media (max-width: 760px) {
@@ -1069,6 +1096,7 @@ tbody tr:hover td { background: rgba(24, 183, 241, .035); }
   .alert-banner { align-items: flex-start; }
   .alert-cta { display: none; }
   .pagination { min-width: 720px; }
+  .operations-strip { display: none; }
 }
 
 /* ================= overview ================= */
