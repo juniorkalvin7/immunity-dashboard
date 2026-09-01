@@ -7,27 +7,33 @@
 {% block content %}
 <section class="page overview-page" id="page-overview">
   <div class="overview-kpis">
-    <article class="overview-kpi overview-kpi-health">
-      <span class="overview-kpi-icon" data-icon="activity"></span>
-      <div><span class="overview-kpi-label">Saúde do ambiente</span><strong id="ov-health">–%</strong><small id="ov-health-detail">–</small></div>
+    <article class="overview-kpi resource-kpi" data-resource-status="cpu">
+      <span class="overview-kpi-icon" data-icon="cpu"></span>
+      <div><span class="overview-kpi-label">CPU crítica</span><strong id="ov-cpu-critical">–</strong><small id="ov-cpu-detail">Hosts acima de 85%</small></div>
     </article>
-    <article class="overview-kpi">
-      <span class="overview-kpi-icon" data-icon="bell"></span>
-      <div><span class="overview-kpi-label">Incidentes ativos</span><strong id="ov-incidents">–</strong><small id="ov-unack">–</small></div>
+    <article class="overview-kpi resource-kpi" data-resource-status="memory">
+      <span class="overview-kpi-icon" data-icon="memory"></span>
+      <div><span class="overview-kpi-label">Memória crítica</span><strong id="ov-memory-critical">–</strong><small id="ov-memory-detail">Hosts acima de 85%</small></div>
     </article>
-    <article class="overview-kpi overview-kpi-critical">
-      <span class="overview-kpi-icon" data-icon="alertTriangle"></span>
-      <div><span class="overview-kpi-label">Alta prioridade</span><strong id="ov-critical">–</strong><small>High + Disaster</small></div>
+    <article class="overview-kpi resource-kpi" data-resource-status="disk">
+      <span class="overview-kpi-icon" data-icon="disk"></span>
+      <div><span class="overview-kpi-label">Disco crítico</span><strong id="ov-disk-critical">–</strong><small id="ov-disk-detail">Hosts acima de 85%</small></div>
     </article>
-    <article class="overview-kpi">
-      <span class="overview-kpi-icon" data-icon="shield"></span>
-      <div><span class="overview-kpi-label">Firewalls Sophos</span><strong id="ov-firewalls">–</strong><small id="ov-ipsec">–</small></div>
-    </article>
-    <article class="overview-kpi">
-      <span class="overview-kpi-icon" data-icon="users"></span>
-      <div><span class="overview-kpi-label">Usuários SSL VPN</span><strong id="ov-vpn">–</strong><small>Conectados agora</small></div>
+    <article class="overview-kpi resource-kpi overview-kpi-critical" data-resource-status="down">
+      <span class="overview-kpi-icon" data-icon="serverOff"></span>
+      <div><span class="overview-kpi-label">Hosts indisponíveis</span><strong id="ov-hosts-down">–</strong><small id="ov-down-detail">Sem comunicação</small></div>
     </article>
   </div>
+
+  <article class="panel pressure-panel">
+    <div class="panel-title-row"><div><h2>Pressão de recursos</h2><span>Os maiores consumos do ambiente, ordenados por criticidade</span></div><span class="pressure-threshold">CRÍTICO ≥ 85%</span></div>
+    <div class="pressure-grid">
+      <section class="pressure-column"><h3><span data-icon="cpu"></span>CPU</h3><div id="ov-pressure-cpu"></div></section>
+      <section class="pressure-column"><h3><span data-icon="memory"></span>MEMÓRIA</h3><div id="ov-pressure-memory"></div></section>
+      <section class="pressure-column"><h3><span data-icon="disk"></span>DISCO</h3><div id="ov-pressure-disk"></div></section>
+      <section class="pressure-column pressure-down"><h3><span data-icon="serverOff"></span>HOSTS DOWN</h3><div id="ov-pressure-down"></div></section>
+    </div>
+  </article>
 
   <div class="overview-grid overview-grid-main">
     <article class="panel overview-status-card">
