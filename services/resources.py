@@ -33,8 +33,6 @@ def _resource_items(prefix: str) -> list[dict]:
             "searchWildcardsEnabled": True,
             "filter": {"status": 0, "state": 0},
             "selectHosts": ["hostid", "name"],
-            "sortfield": "lastvalue",
-            "sortorder": "DESC",
         },
     )
 
