@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Visão Geral{% endblock %}
+{% block breadcrumb_current %}Visão Geral{% endblock %}
+{% block page_title %}Visão Geral{% endblock %}
+{% block page_sub %}Panorama operacional do ambiente monitorado pelo Zabbix{% endblock %}
+
+{% block content %}
+<section class="page overview-page" id="page-overview">
+  <div class="overview-kpis">
+    <article class="overview-kpi overview-kpi-health">
+      <span class="overview-kpi-icon" data-icon="activity"></span>
+      <div><span class="overview-kpi-label">Saúde do ambiente</span><strong id="ov-health">–%</strong><small id="ov-health-detail">–</small></div>
+    </article>
+    <article class="overview-kpi">
+      <span class="overview-kpi-icon" data-icon="bell"></span>
+      <div><span class="overview-kpi-label">Incidentes ativos</span><strong id="ov-incidents">–</strong><small id="ov-unack">–</small></div>
+    </article>
+    <article class="overview-kpi overview-kpi-critical">
+      <span class="overview-kpi-icon" data-icon="alertTriangle"></span>
+      <div><span class="overview-kpi-label">Alta prioridade</span><strong id="ov-critical">–</strong><small>High + Disaster</small></div>
+    </article>
+    <article class="overview-kpi">
+      <span class="overview-kpi-icon" data-icon="shield"></span>
+      <div><span class="overview-kpi-label">Firewalls Sophos</span><strong id="ov-firewalls">–</strong><small id="ov-ipsec">–</small></div>
+    </article>
+    <article class="overview-kpi">
+      <span class="overview-kpi-icon" data-icon="users"></span>
+      <div><span class="overview-kpi-label">Usuários SSL VPN</span><strong id="ov-vpn">–</strong><small>Conectados agora</small></div>
+    </article>
+  </div>
+
+  <div class="overview-grid overview-grid-main">
+    <article class="panel overview-status-card">
+      <div class="panel-title-row"><div><h2>Estado do ambiente</h2><span>Disponibilidade atual dos hosts</span></div><span class="status-live"><i></i> Tempo real</span></div>
+      <div class="health-gauge-wrap">
+        <div class="health-gauge" id="ov-gauge"><div class="health-gauge-center"><strong id="ov-gauge-value">–%</strong><span>saudável</span></div></div>
+        <div class="health-breakdown">
+          <div><span class="health-breakdown-dot is-total"></span><span>Hosts monitorados</span><strong id="ov-host-total">–</strong></div>
+          <div><span class="health-breakdown-dot is-healthy"></span><span>Saudáveis</span><strong id="ov-host-ok">–</strong></div>
+          <div><span class="health-breakdown-dot is-problem"></span><span>Com alerta</span><strong id="ov-host-bad">–</strong></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel overview-severity-card">
+      <div class="panel-title-row"><div><h2>Incidentes por severidade</h2><span>Distribuição dos problemas ativos</span></div><a href="{{ url_for('incidentes_page') }}">Ver todos →</a></div>
+      <div class="severity-stack" id="ov-severity-stack"></div>
+      <div class="overview-severity-list" id="ov-severity-list"></div>
+    </article>
+
+    <article class="panel overview-network-card">
+      <div class="panel-title-row"><div><h2>Conectividade protegida</h2><span>Resumo da frota Sophos</span></div><a href="{{ url_for('firewalls_page') }}">Abrir firewalls →</a></div>
+      <div class="network-metrics">
+        <div class="network-metric is-up"><span data-icon="link"></span><strong id="ov-ipsec-up">–</strong><small>IPsec ativos</small></div>
+        <div class="network-metric is-down"><span data-icon="linkOff"></span><strong id="ov-ipsec-down">–</strong><small>IPsec indisponíveis</small></div>
+        <div class="network-metric is-vpn"><span data-icon="users"></span><strong id="ov-vpn-card">–</strong><small>Usuários remotos</small></div>
+      </div>
+    </article>
+  </div>
+
+  <div class="overview-grid overview-grid-lower">
+    <article class="panel overview-critical-list">
+      <div class="panel-title-row"><div><h2>Exigem atenção agora</h2><span>Incidentes de maior prioridade</span></div><span class="critical-counter" id="ov-critical-counter">0 críticos</span></div>
+      <div id="ov-critical-list"></div>
+    </article>
+    <article class="panel overview-groups-card">
+      <div class="panel-title-row"><div><h2>Grupos com mais incidentes</h2><span>Concentração atual de alertas</span></div></div>
+      <div id="ov-groups"></div>
+    </article>
+  </div>
+</section>
+
+<script id="overview-initial-data" type="application/json">{{ initial_json | safe }}</script>
+{% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='js/overview.js') }}"></script>{% endblock %}
