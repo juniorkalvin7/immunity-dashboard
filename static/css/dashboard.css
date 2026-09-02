@@ -1463,7 +1463,7 @@ html[data-theme="light"] .home-tabs button.is-active { color: #07384b; border-co
 .resource-table th[data-sort] { cursor: pointer; }
 .resource-table tbody td { height: 42px; }
 .resource-host, .resource-group, .resource-info { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.resource-host { font-size: 10px; }.resource-group { color: var(--text-dim); font: 9px var(--mono); }.resource-info { font-size: 10px; }
+.resource-host { font-size: 10px; }.resource-group { color: var(--text-dim); font: 9px var(--mono); }.resource-info { font-size: 10px; }.resource-current { display:block; overflow:hidden; margin-top:3px; color:var(--text-faint); font:8px var(--mono); text-overflow:ellipsis; white-space:nowrap; }
 .resource-kind { display: inline-flex; align-items: center; gap: 6px; color: var(--text-dim); font-size: 9px; }
 .resource-kind i, .resource-kind svg { width: 14px; height: 14px; color: var(--accent); }
 .resource-pagination { min-height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; color: var(--text-dim); border-top: 1px solid var(--border); font: 9px var(--mono); }

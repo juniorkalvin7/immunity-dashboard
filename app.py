@@ -162,6 +162,16 @@ def api_recurso_trigger_details(triggerid):
         return jsonify({"ok": False, "error": str(exc)}), 502
 
 
+@app.route("/api/recursos/item/<itemid>/details")
+def api_recurso_item_details(itemid):
+    try:
+        detail = resources.get_item_details(itemid, request.args.get("hours", 24))
+        detail["maintenances"] = incidents.get_host_maintenances(detail.get("hostid"))
+        return jsonify(detail)
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)}), 502
+
+
 @app.route("/api/recursos/ack", methods=["POST"])
 def api_recursos_ack():
     payload = request.get_json(silent=True) or {}
