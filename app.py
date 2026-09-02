@@ -44,7 +44,7 @@ def overview_page():
 
 @app.route("/incidentes")
 def incidentes_page():
-    return redirect(url_for("home_page", _anchor="incident-queue"))
+    return redirect(url_for("home_page", _anchor="incidents"))
 
 
 @app.route("/recursos")

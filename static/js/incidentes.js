@@ -378,6 +378,23 @@ function setupFilterBar() {
   });
 }
 
+window.applyIncidentShortcut = function applyIncidentShortcut(mode) {
+  filters.search = "";
+  document.getElementById("filter-search").value = "";
+  filters.group = "";
+  document.getElementById("filter-group").value = "";
+  filters.unackOnly = mode === "unack";
+  document.getElementById("filter-unack").checked = filters.unackOnly;
+  filters.severities = new Set(mode === "critical" ? ["disaster", "high"] : ALL_SEVERITIES);
+  document.querySelectorAll(".sev-toggle").forEach((button) => {
+    const severity = button.dataset.sev;
+    button.classList.toggle("is-active", mode === "critical" ? severity === "disaster" || severity === "high" : true);
+  });
+  updateAllToggleState();
+  page = 1;
+  renderTable();
+};
+
 // ---------- boot ----------
 
 setupFilterBar();

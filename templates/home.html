@@ -8,29 +8,31 @@
 {% block content %}
 <section class="page overview-page" id="page-overview">
   <div class="home-command-kpis">
-    <a class="home-command-kpi is-critical" data-home-state="critical" href="#incident-queue"><span data-icon="alertTriangle"></span><div><small>Incidentes críticos</small><strong id="ov-queue-critical">–</strong><em>Exigem ação imediata</em></div></a>
-    <a class="home-command-kpi is-critical" data-home-state="down" href="#incident-queue"><span data-icon="serverOff"></span><div><small>Hosts DOWN</small><strong id="ov-hosts-down">–</strong><em id="ov-down-detail">Verificando comunicação</em></div></a>
-    <a class="home-command-kpi is-warning" data-home-state="unack" href="#incident-queue"><span data-icon="bell"></span><div><small>Não tratados</small><strong id="ov-queue-unack">–</strong><em>Aguardando responsável</em></div></a>
-    <a class="home-command-kpi is-warning" data-home-state="capacity" href="#capacity-risks"><span data-icon="activity"></span><div><small>Riscos de capacidade</small><strong id="ov-queue-capacity">–</strong><em>Recursos acima de 70%</em></div></a>
+    <a class="home-command-kpi is-critical" data-home-state="critical" data-home-tab-target="incidents" data-incident-shortcut="critical" href="#incident-queue"><span data-icon="alertTriangle"></span><div><small>Incidentes críticos</small><strong id="ov-queue-critical">–</strong><em>Exigem ação imediata</em></div></a>
+    <a class="home-command-kpi is-critical" data-home-state="down" data-home-tab-target="incidents" data-incident-shortcut="all" href="#incident-queue"><span data-icon="serverOff"></span><div><small>Hosts DOWN</small><strong id="ov-hosts-down">–</strong><em id="ov-down-detail">Verificando comunicação</em></div></a>
+    <a class="home-command-kpi is-warning" data-home-state="unack" data-home-tab-target="incidents" data-incident-shortcut="unack" href="#incident-queue"><span data-icon="bell"></span><div><small>Não tratados</small><strong id="ov-queue-unack">–</strong><em>Aguardando responsável</em></div></a>
+    <a class="home-command-kpi is-warning" data-home-state="capacity" data-home-tab-target="capacity" href="#capacity-risks"><span data-icon="activity"></span><div><small>Riscos de capacidade</small><strong id="ov-queue-capacity">–</strong><em>Recursos acima de 70%</em></div></a>
     <a class="home-command-kpi is-info" href="{{ url_for('vpn_users_page') }}"><span data-icon="users"></span><div><small>VPN Users</small><strong id="ov-vpn-users">–</strong><em>Usuários ativos agora</em></div></a>
     <a class="home-command-kpi is-critical" data-home-state="ipsec" href="{{ url_for('vpn_ipsec_page') }}"><span data-icon="linkOff"></span><div><small>VPN IPsec DOWN</small><strong id="ov-ipsec-down">–</strong><em>Túneis indisponíveis</em></div></a>
   </div>
-  <div class="proactive-grid home-priority-grid">
-    <article class="panel proactive-actions-panel"><div class="panel-title-row"><div><h2>Ações prioritárias</h2><span>O que a operação precisa tratar agora, em ordem de impacto</span></div><span class="action-live"><i></i> PRIORIZAÇÃO AUTOMÁTICA</span></div><div id="ov-proactive-actions"></div></article>
-  </div>
-  <article class="panel pressure-panel">
-    <div class="panel-title-row"><div><h2>Pressão de recursos</h2><span>CPU, memória, disco e hosts com maior impacto operacional</span></div><span class="pressure-threshold">AVISO ≥ 70% · CRÍTICO ≥ 85%</span></div>
-    <div class="pressure-grid"><section class="pressure-column"><h3><span data-icon="cpu"></span>CPU</h3><div id="ov-pressure-cpu"></div></section><section class="pressure-column"><h3><span data-icon="memory"></span>MEMÓRIA</h3><div id="ov-pressure-memory"></div></section><section class="pressure-column"><h3><span data-icon="disk"></span>DISCO</h3><div id="ov-pressure-disk"></div></section><section class="pressure-column pressure-down"><h3><span data-icon="serverOff"></span>HOSTS DOWN</h3><div id="ov-pressure-down"></div></section></div>
-  </article>
-  <div class="home-vpn-grid">
-    <a class="panel home-vpn-card" href="{{ url_for('vpn_users_page') }}"><span class="home-vpn-icon" data-icon="users"></span><div><small>VPN USERS · ATIVIDADE</small><strong><b id="ov-vpn-users-detail">–</b> usuários conectados</strong><em>Ver sessões, origem, IP atribuído e tráfego</em></div><span class="home-card-arrow">→</span></a>
-    <a class="panel home-vpn-card" href="{{ url_for('vpn_ipsec_page') }}"><span class="home-vpn-icon" data-icon="link"></span><div><small>VPN IPSEC · DISPONIBILIDADE</small><strong><b id="ov-ipsec-up">–</b> UP <i>·</i> <b id="ov-ipsec-down-detail">–</b> DOWN</strong><em>Ver túneis por firewall e estado</em></div><span class="home-card-arrow">→</span></a>
-  </div>
-  <div class="proactive-grid proactive-grid-lower">
+  <nav class="home-tabs" aria-label="Áreas da Home">
+    <button type="button" class="is-active" data-home-tab="operations"><span data-icon="activity"></span><strong>Operação</strong><small>Prioridades e VPN</small></button>
+    <button type="button" data-home-tab="capacity"><span data-icon="cpu"></span><strong>Capacidade</strong><small>CPU, memória e disco</small></button>
+    <button type="button" data-home-tab="incidents"><span data-icon="bell"></span><strong>Incidentes</strong><small>Fila e tratamento</small></button>
+  </nav>
+
+  <section class="home-tab-pane is-active" data-home-pane="operations">
+    <div class="proactive-grid home-priority-grid"><article class="panel proactive-actions-panel"><div class="panel-title-row"><div><h2>Ações prioritárias</h2><span>O que a operação precisa tratar agora, em ordem de impacto</span></div><span class="action-live"><i></i> PRIORIZAÇÃO AUTOMÁTICA</span></div><div id="ov-proactive-actions"></div></article></div>
+    <div class="home-vpn-grid"><a class="panel home-vpn-card" href="{{ url_for('vpn_users_page') }}"><span class="home-vpn-icon" data-icon="users"></span><div><small>VPN USERS · ATIVIDADE</small><strong><b id="ov-vpn-users-detail">–</b> usuários conectados</strong><em>Ver sessões, origem, IP atribuído e tráfego</em></div><span class="home-card-arrow">→</span></a><a class="panel home-vpn-card" href="{{ url_for('vpn_ipsec_page') }}"><span class="home-vpn-icon" data-icon="link"></span><div><small>VPN IPSEC · DISPONIBILIDADE</small><strong><b id="ov-ipsec-up">–</b> UP <i>·</i> <b id="ov-ipsec-down-detail">–</b> DOWN</strong><em>Ver túneis por firewall e estado</em></div><span class="home-card-arrow">→</span></a></div>
+    <article class="panel unack-panel"><div class="panel-title-row"><div><h2>Incidentes não reconhecidos</h2><span>Alertas ainda sem responsável operacional</span></div><button type="button" class="panel-link" data-home-tab-target="incidents" data-incident-shortcut="unack">Abrir fila →</button></div><div id="ov-unack-list"></div></article>
+  </section>
+
+  <section class="home-tab-pane" data-home-pane="capacity" hidden>
+    <article class="panel pressure-panel"><div class="panel-title-row"><div><h2>Pressão de recursos</h2><span>CPU, memória, disco e hosts com maior impacto operacional</span></div><span class="pressure-threshold">AVISO ≥ 70% · CRÍTICO ≥ 85%</span></div><div class="pressure-grid"><section class="pressure-column"><h3><span data-icon="cpu"></span>CPU</h3><div id="ov-pressure-cpu"></div></section><section class="pressure-column"><h3><span data-icon="memory"></span>MEMÓRIA</h3><div id="ov-pressure-memory"></div></section><section class="pressure-column"><h3><span data-icon="disk"></span>DISCO</h3><div id="ov-pressure-disk"></div></section><section class="pressure-column pressure-down"><h3><span data-icon="serverOff"></span>HOSTS DOWN</h3><div id="ov-pressure-down"></div></section></div></article>
     <article class="panel capacity-risks-panel" id="capacity-risks"><div class="panel-title-row"><div><h2>Riscos de capacidade</h2><span>Recursos acima de 70% que podem virar incidente</span></div><span class="capacity-counter" id="ov-capacity-counter">0 riscos</span></div><div id="ov-capacity-risks"></div></article>
-    <article class="panel unack-panel"><div class="panel-title-row"><div><h2>Incidentes não reconhecidos</h2><span>Alertas ainda sem responsável operacional</span></div><a href="#incident-queue">Abrir fila ↓</a></div><div id="ov-unack-list"></div></article>
-  </div>
-  <article class="home-incidents" id="incident-queue">
+  </section>
+
+  <article class="home-tab-pane home-incidents" data-home-pane="incidents" id="incident-queue" hidden>
     <div class="queue-header"><div><h2>Incidentes</h2><span class="page-sub">Fila completa de problemas ativos</span></div><span class="queue-count" id="filter-count"></span></div>
     <div class="filter-bar"><div class="search-wrap"><span class="search-icon" data-icon="search"></span><input type="search" id="filter-search" placeholder="Buscar host, problema ou tag" autocomplete="off"></div><div class="sev-toggles" id="sev-toggles"><button type="button" class="sev-toggle is-active" data-sev="all">Todos</button><button type="button" class="sev-toggle is-active sev-toggle-disaster" data-sev="disaster">Disaster</button><button type="button" class="sev-toggle is-active sev-toggle-high" data-sev="high">High</button><button type="button" class="sev-toggle is-active sev-toggle-average" data-sev="average">Average</button><button type="button" class="sev-toggle is-active sev-toggle-warning" data-sev="warning">Warning</button><button type="button" class="sev-toggle is-active sev-toggle-information" data-sev="information">Information</button></div><select id="filter-group"><option value="">todos os grupos</option></select><label class="switch-label"><span class="switch"><input type="checkbox" id="filter-unack"><span class="switch-track"></span></span>Somente não reconhecidos</label></div>
     <div class="panel"><table class="problems-table sortable" id="inc-table"><colgroup><col style="width:9%"><col style="width:14%"><col style="width:13%"><col style="width:26%"><col style="width:14%"><col style="width:8%"><col style="width:8%"><col style="width:8%"></colgroup><thead><tr><th data-sort="severity">Severidade</th><th data-sort="host_name">Host</th><th data-sort="group_name">Grupo</th><th data-sort="name">Problema</th><th>Tags</th><th data-sort="clock">Duração</th><th data-sort="acknowledged">Status</th><th>Ação</th></tr></thead><tbody id="inc-rows"><tr><td colspan="8" class="loading">carregando…</td></tr></tbody></table><div class="pagination" id="pagination"></div></div>
@@ -39,4 +41,4 @@
 <script id="overview-initial-data" type="application/json">{{ overview_json | safe }}</script>
 <script id="incidentes-initial-data" type="application/json">{{ incidentes_json | safe }}</script>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='js/overview.js') }}"></script><script src="{{ url_for('static', filename='js/incidentes.js') }}"></script>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/overview.js') }}"></script><script src="{{ url_for('static', filename='js/incidentes.js') }}"></script><script src="{{ url_for('static', filename='js/home_tabs.js') }}"></script>{% endblock %}
