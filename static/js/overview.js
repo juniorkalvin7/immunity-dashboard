@@ -36,19 +36,35 @@ function renderProactiveOverview(data, pressure, criticalCount) {
   setOverviewText("ov-queue-unack", summary.unacknowledged);
   setOverviewText("ov-queue-capacity", capacity.length);
   setOverviewText("ov-queue-connectivity", connectivityCount);
+  setOverviewText("ov-vpn-users", Number(firewalls.sslvpn_users || 0));
+  setOverviewText("ov-vpn-users-detail", Number(firewalls.sslvpn_users || 0));
+  setOverviewText("ov-ipsec-up", Number(firewalls.ipsec_up || 0));
+  setOverviewText("ov-ipsec-down", Number(firewalls.ipsec_down || 0));
+  setOverviewText("ov-ipsec-down-detail", Number(firewalls.ipsec_down || 0));
   setOverviewText("ov-capacity-counter", `${capacity.length} risco${capacity.length === 1 ? "" : "s"}`);
+  setHomeKpiState("critical", criticalCount);
+  setHomeKpiState("down", downCount);
+  setHomeKpiState("unack", summary.unacknowledged);
+  setHomeKpiState("capacity", capacity.length);
+  setHomeKpiState("ipsec", Number(firewalls.ipsec_down || 0));
 
   renderPriorityActions(data, pressure, capacity);
   renderCapacityRisks(capacity);
   renderUnacknowledged((data.incidents || []).filter((item) => !item.acknowledged));
 }
 
+function setHomeKpiState(name, count) {
+  const card = document.querySelector(`[data-home-state="${name}"]`);
+  if (!card) return;
+  card.classList.toggle("is-clear", Number(count) === 0);
+}
+
 function renderPriorityActions(data, pressure, capacity) {
   const actions = [];
-  (pressure.down_hosts || []).forEach((host) => actions.push({ level: 6, type: "HOST DOWN", title: host.host_name, detail: host.error || "Sem comunicação", icon: "serverOff", href: "/incidentes" }));
-  if (Number(data.firewalls.ipsec_down || 0) > 0) actions.push({ level: 5, type: "VPN IPSEC", title: `${data.firewalls.ipsec_down} túneis indisponíveis`, detail: "Verifique conectividade e negociação dos túneis", icon: "linkOff", href: "/firewalls" });
+  (pressure.down_hosts || []).forEach((host) => actions.push({ level: 6, type: "HOST DOWN", title: host.host_name, detail: host.error || "Sem comunicação", icon: "serverOff", href: "/home#incidents" }));
+  if (Number(data.firewalls.ipsec_down || 0) > 0) actions.push({ level: 5, type: "VPN IPSEC", title: `${data.firewalls.ipsec_down} túneis indisponíveis`, detail: "Verifique conectividade e negociação dos túneis", icon: "linkOff", href: "/vpn-ipsec" });
   capacity.filter((row) => row.value >= 85).forEach((row) => actions.push({ level: 4, type: row.type, title: row.host_name, detail: `${row.value.toFixed(1)}% utilizado${row.detail ? ` · ${row.detail}` : ""}`, icon: row.icon, href: "#capacity-risks" }));
-  (data.critical || []).forEach((item) => actions.push({ level: item.severity, type: item.severity_name.toUpperCase(), title: item.host_name, detail: item.name, duration: item.duration, icon: "alertTriangle", href: "/incidentes" }));
+  (data.critical || []).forEach((item) => actions.push({ level: item.severity, type: item.severity_name.toUpperCase(), title: item.host_name, detail: item.name, duration: item.duration, icon: "alertTriangle", href: "/home#incidents" }));
   actions.sort((a, b) => b.level - a.level);
 
   const root = document.getElementById("ov-proactive-actions");
@@ -88,7 +104,7 @@ function renderUnacknowledged(items) {
     return;
   }
   root.innerHTML = sorted.slice(0, 8).map((item) => `
-    <a class="unack-item" href="/incidentes">
+    <a class="unack-item" href="/home#incidents">
       <span class="sev-solid sev-solid-${item.severity_name}">${escapeHtml(item.severity_name)}</span>
       <span><strong>${escapeHtml(item.host_name)}</strong><small>${escapeHtml(item.name)}</small></span>
       <b>${escapeHtml(item.duration)}</b>
@@ -179,7 +195,7 @@ function renderOverviewCritical(items) {
     return;
   }
   root.innerHTML = items.map((item) => `
-    <a class="overview-critical-item" href="/incidentes" title="${escapeHtml(item.name)}">
+    <a class="overview-critical-item" href="/home#incidents" title="${escapeHtml(item.name)}">
       <span class="sev-solid sev-solid-${item.severity_name}">${escapeHtml(item.severity_name)}</span>
       <span class="overview-critical-copy"><strong>${escapeHtml(item.host_name)}</strong><small>${escapeHtml(item.name)}</small></span>
       <span class="overview-critical-duration">${escapeHtml(item.duration)}</span>

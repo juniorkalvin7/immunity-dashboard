@@ -83,18 +83,20 @@ function getSorted(list) {
 // ---------- rendering: top panels ----------
 
 function renderSummary(summary) {
-  document.getElementById("inc-total").textContent = summary.total;
+  const badge = document.getElementById("notif-badge");
+  if (badge) {
+    badge.hidden = summary.unacknowledged === 0;
+    badge.textContent = summary.unacknowledged > 99 ? "99+" : summary.unacknowledged;
+  }
+  const totalEl = document.getElementById("inc-total");
+  if (!totalEl) return;
+  totalEl.textContent = summary.total;
   document.getElementById("inc-disaster").textContent = summary.by_severity.disaster;
   document.getElementById("inc-high").textContent = summary.by_severity.high;
   document.getElementById("inc-average").textContent = summary.by_severity.average;
   document.getElementById("inc-warning").textContent = summary.by_severity.warning;
   document.getElementById("inc-unack").textContent = summary.unacknowledged;
 
-  const badge = document.getElementById("notif-badge");
-  if (badge) {
-    badge.hidden = summary.unacknowledged === 0;
-    badge.textContent = summary.unacknowledged > 99 ? "99+" : summary.unacknowledged;
-  }
 }
 
 function renderTrends(trend) {
@@ -120,6 +122,7 @@ function setTrend(elId, count) {
 }
 
 function renderPriority(summary) {
+  if (!document.getElementById("priority-bar")) return;
   const segments = [
     { key: "disaster", label: "Disaster", color: "var(--sev-disaster)" },
     { key: "high", label: "High", color: "var(--sev-high)" },
@@ -146,7 +149,7 @@ function renderPriority(summary) {
 }
 
 function renderHealth(health) {
-  if (!health) return;
+  if (!health || !document.getElementById("health-pct")) return;
   document.getElementById("health-pct").textContent = health.health_pct + "%";
   document.getElementById("health-pct").style.color =
     health.health_pct >= 90 ? "var(--ok)" : health.health_pct >= 70 ? "var(--warn)" : "var(--bad)";
@@ -157,6 +160,7 @@ function renderHealth(health) {
 
 function renderAlertBanner(top) {
   const banner = document.getElementById("alert-banner");
+  if (!banner) return;
   if (!top) {
     banner.hidden = true;
     return;
@@ -185,7 +189,7 @@ function statusHtml(inc) {
 }
 
 function actionHtml(inc) {
-  return inc.acknowledged ? "" : `<button class="ack-btn" data-eventid="${inc.eventid}">Reconhecer</button>`;
+  return `<button class="ack-btn ${inc.acknowledged ? "is-unack" : ""}" data-eventid="${inc.eventid}" data-mode="${inc.acknowledged ? "unack" : "ack"}">${inc.acknowledged ? "Desreconhecer" : "Reconhecer"}</button>`;
 }
 
 function renderTable() {
@@ -280,22 +284,23 @@ function renderPagination(totalItems, totalPages) {
 async function onAcknowledgeClick(ev) {
   const btn = ev.currentTarget;
   const eventid = btn.dataset.eventid;
+  const unacknowledging = btn.dataset.mode === "unack";
   btn.disabled = true;
   btn.textContent = "…";
   try {
-    const res = await fetch(`/api/incidentes/${eventid}/ack`, { method: "POST" });
+    const res = await fetch(`/api/incidentes/${eventid}/${unacknowledging ? "unack" : "ack"}`, { method: "POST" });
     const body = await res.json();
     if (!body.ok) throw new Error(body.error || "falha ao reconhecer");
     const inc = allIncidents.find((i) => i.eventid === eventid);
     if (inc) {
-      inc.acknowledged = true;
+      inc.acknowledged = !unacknowledging;
       const summaryEl = document.getElementById("inc-unack");
-      summaryEl.textContent = Math.max(0, Number(summaryEl.textContent) - 1);
+      if (summaryEl) summaryEl.textContent = Math.max(0, Number(summaryEl.textContent) + (unacknowledging ? 1 : -1));
     }
     renderTable();
   } catch (e) {
     btn.disabled = false;
-    btn.textContent = "Reconhecer";
+    btn.textContent = unacknowledging ? "Desreconhecer" : "Reconhecer";
     setConnStatus(false, e.message);
   }
 }
@@ -359,7 +364,8 @@ function setupFilterBar() {
     });
   });
 
-  document.getElementById("alert-cta").addEventListener("click", () => {
+  const alertCta = document.getElementById("alert-cta");
+  if (alertCta) alertCta.addEventListener("click", () => {
     filters.severities = new Set(["disaster", "high"]);
     document.querySelectorAll(".sev-toggle").forEach((b) => {
       const sev = b.dataset.sev;
@@ -371,6 +377,23 @@ function setupFilterBar() {
     document.getElementById("inc-table").scrollIntoView({ behavior: "smooth", block: "start" });
   });
 }
+
+window.applyIncidentShortcut = function applyIncidentShortcut(mode) {
+  filters.search = "";
+  document.getElementById("filter-search").value = "";
+  filters.group = "";
+  document.getElementById("filter-group").value = "";
+  filters.unackOnly = mode === "unack";
+  document.getElementById("filter-unack").checked = filters.unackOnly;
+  filters.severities = new Set(mode === "critical" ? ["disaster", "high"] : ALL_SEVERITIES);
+  document.querySelectorAll(".sev-toggle").forEach((button) => {
+    const severity = button.dataset.sev;
+    button.classList.toggle("is-active", mode === "critical" ? severity === "disaster" || severity === "high" : true);
+  });
+  updateAllToggleState();
+  page = 1;
+  renderTable();
+};
 
 // ---------- boot ----------
 

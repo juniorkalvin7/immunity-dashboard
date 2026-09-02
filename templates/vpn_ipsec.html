@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "_macros.html" import severity_badge %}
+{% block title %}VPN IPsec{% endblock %}
+{% block breadcrumb_current %}VPN IPsec{% endblock %}
+{% block page_title %}VPN IPsec{% endblock %}
+{% block page_sub %}Disponibilidade e atividade dos túneis entre sites{% endblock %}
+{% block content %}
+<section class="page vpn-activity-page">
+  <div class="vpn-kpis">
+    <article class="panel vpn-kpi is-ok"><span data-icon="link"></span><div><strong id="ipsec-up-total">{{ summary.ipsec_up }}</strong><small>VPN UP</small></div></article>
+    <article class="panel vpn-kpi {{ 'is-critical' if summary.ipsec_down else 'is-ok' }}"><span data-icon="linkOff"></span><div><strong id="ipsec-down-total">{{ summary.ipsec_down }}</strong><small>VPN DOWN</small></div></article>
+    <article class="panel vpn-kpi"><span data-icon="shield"></span><div><strong>{{ summary.count }}</strong><small>Firewalls monitorados</small></div></article>
+    <article class="panel vpn-kpi {{ 'is-critical' if ipsec_problems else '' }}"><span data-icon="alertTriangle"></span><div><strong id="ipsec-problem-total">{{ ipsec_problems | length }}</strong><small>Problemas ativos</small></div></article>
+  </div>
+  <article class="panel">
+    <div class="panel-title-row"><div><h2>Túneis IPsec</h2><span>Catálogo individual de VPNs operacionais e indisponíveis</span></div><span class="action-live"><i></i> TEMPO REAL</span></div>
+    <div class="filter-bar vpn-filter"><div class="search-wrap"><span class="search-icon" data-icon="search"></span><input id="ipsec-search" type="search" placeholder="Buscar túnel" autocomplete="off"></div><select id="ipsec-firewall-filter"><option value="">Todos os firewalls</option></select><select id="ipsec-status-filter"><option value="">UP e DOWN</option><option value="up">Somente UP</option><option value="down">Somente DOWN</option><option value="unknown">Desconhecido</option></select><span class="queue-count" id="ipsec-result-count">{{ ipsec_tunnels | length }} túneis</span></div>
+    <table class="fw-table"><thead><tr><th>Estado</th><th>Firewall</th><th>Túnel IPsec</th><th>Tempo no estado</th></tr></thead><tbody id="ipsec-tunnel-rows"><tr><td colspan="4" class="loading">Carregando túneis…</td></tr></tbody></table>
+  </article>
+</section>
+<script id="ipsec-data" type="application/json">{{ ipsec_tunnels | tojson }}</script>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/vpn_activities.js') }}"></script>{% endblock %}

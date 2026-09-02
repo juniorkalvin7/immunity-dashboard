@@ -22,23 +22,29 @@ def _safe_embed_json(data: dict) -> str:
 
 @app.route("/")
 def index():
-    return redirect(url_for("overview_page"))
+    return redirect(url_for("home_page"))
+
+
+@app.route("/home")
+def home_page():
+    overview_data = _overview_data()
+    incident_data = _incidentes_data()
+    return render_template(
+        "home.html",
+        active_page="home",
+        overview_json=_safe_embed_json(overview_data),
+        incidentes_json=_safe_embed_json(incident_data),
+    )
 
 
 @app.route("/overview")
 def overview_page():
-    data = _overview_data()
-    return render_template(
-        "overview.html", active_page="overview", initial_json=_safe_embed_json(data)
-    )
+    return redirect(url_for("home_page"))
 
 
 @app.route("/incidentes")
 def incidentes_page():
-    data = _incidentes_data()
-    return render_template(
-        "incidentes.html", active_page="incidentes", initial_json=_safe_embed_json(data)
-    )
+    return redirect(url_for("home_page", _anchor="incidents"))
 
 
 @app.route("/recursos")
@@ -49,10 +55,25 @@ def recursos_page():
     )
 
 
+@app.route("/vpn-users")
+def vpn_users_page():
+    data = _firewalls_data()
+    return render_template("vpn_users.html", active_page="vpn_users", **data)
+
+
+@app.route("/vpn-ipsec")
+def vpn_ipsec_page():
+    data = _firewalls_data()
+    data["ipsec_problems"] = [
+        problem for problem in data["problems"]
+        if any(term in problem.get("name", "").lower() for term in ("ipsec", "tunnel", "vpn"))
+    ]
+    return render_template("vpn_ipsec.html", active_page="vpn_ipsec", **data)
+
+
 @app.route("/firewalls")
 def firewalls_page():
-    data = _firewalls_data()
-    return render_template("firewalls.html", active_page="firewalls", **data)
+    return redirect(url_for("vpn_ipsec_page"))
 
 
 @app.route("/api/incidentes")
@@ -109,6 +130,91 @@ def api_ack_incidente(eventid):
     return jsonify({"ok": True})
 
 
+@app.route("/api/incidentes/<eventid>/unack", methods=["POST"])
+def api_unack_incidente(eventid):
+    message = (request.get_json(silent=True) or {}).get("message", "")
+    try:
+        incidents.unacknowledge_many([eventid], message)
+    except Exception as exc:  # noqa: BLE001 - surfaced to the caller as-is
+        return jsonify({"ok": False, "error": str(exc)}), 502
+    return jsonify({"ok": True})
+
+
+@app.route("/api/recursos/<eventid>/details")
+def api_recurso_details(eventid):
+    try:
+        return jsonify(incidents.get_event_details(eventid, request.args.get("hours", 24)))
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)}), 502
+
+
+@app.route("/api/recursos/trigger/<triggerid>/details")
+def api_recurso_trigger_details(triggerid):
+    eventid = request.args.get("eventid")
+    try:
+        if eventid:
+            detail = incidents.get_event_details(eventid, request.args.get("hours", 24))
+        else:
+            detail = resources.get_trigger_details(triggerid, request.args.get("hours", 24))
+        detail["maintenances"] = incidents.get_host_maintenances(detail.get("hostid"))
+        return jsonify(detail)
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)}), 502
+
+
+@app.route("/api/recursos/item/<itemid>/details")
+def api_recurso_item_details(itemid):
+    try:
+        detail = resources.get_item_details(itemid, request.args.get("hours", 24))
+        detail["maintenances"] = incidents.get_host_maintenances(detail.get("hostid"))
+        return jsonify(detail)
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)}), 502
+
+
+@app.route("/api/recursos/ack", methods=["POST"])
+def api_recursos_ack():
+    payload = request.get_json(silent=True) or {}
+    try:
+        incidents.acknowledge_many(payload.get("eventids") or [], payload.get("message", ""))
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)}), 502
+    return jsonify({"ok": True})
+
+
+@app.route("/api/recursos/unack", methods=["POST"])
+def api_recursos_unack():
+    payload = request.get_json(silent=True) or {}
+    try:
+        incidents.unacknowledge_many(payload.get("eventids") or [], payload.get("message", ""))
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)}), 502
+    return jsonify({"ok": True})
+
+
+@app.route("/api/recursos/maintenance", methods=["POST"])
+def api_recursos_maintenance():
+    payload = request.get_json(silent=True) or {}
+    try:
+        result = incidents.schedule_maintenance(
+            payload.get("hostids") or [], payload.get("minutes", 60),
+            payload.get("name", "Manutenção ANTIGEN"), payload.get("description", ""),
+        )
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)}), 502
+    return jsonify({"ok": True, "result": result})
+
+
+@app.route("/api/recursos/maintenance/remove", methods=["POST"])
+def api_recursos_remove_maintenance():
+    payload = request.get_json(silent=True) or {}
+    try:
+        incidents.remove_maintenances(payload.get("maintenanceids") or [])
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"ok": False, "error": str(exc)}), 502
+    return jsonify({"ok": True})
+
+
 def _incidentes_data() -> dict:
     incident_list = incidents.get_incidents()
     groups = sorted({inc["group_name"] for inc in incident_list if inc["group_name"] != "—"})
@@ -124,33 +230,18 @@ def _incidentes_data() -> dict:
 
 def _recursos_data() -> dict:
     records = incidents.get_incidents()
-    resource_terms = (
-        "cpu", "memory", "memória", "memoria", "disk", "disco", "storage",
-        "filesystem", "file system", "swap", "load", "interface", "port",
-        "vpn", "ipsec", "service", "serviço", "servico", "unreachable",
-        "offline", "not running", "down",
-    )
-
-    enriched = []
-    for record in records:
-        searchable = " ".join(
-            [record.get("name", ""), record.get("host_name", ""), *(record.get("tags") or [])]
-        ).lower()
-        enriched.append(
-            {
-                **record,
-                "is_resource_problem": any(term in searchable for term in resource_terms),
-            }
-        )
-
+    catalog = resources.get_monitored_resources(records)
+    enriched = catalog["resources"]
     return {
         "resources": enriched,
         "groups": sorted({row["group_name"] for row in enriched if row["group_name"] != "—"}),
+        "status_counts": catalog["status_counts"],
         "summary": {
             "total": len(enriched),
-            "unhandled": sum(not row["acknowledged"] for row in enriched),
+            "active": sum(row["has_problem"] for row in enriched),
+            "unhandled": sum(row["has_problem"] and not row["acknowledged"] for row in enriched),
             "resource_problems": sum(row["is_resource_problem"] for row in enriched),
-            "critical": sum(row["severity"] >= 4 for row in enriched),
+            "critical": sum(row["status_name"] in ("critical", "down", "unreachable") for row in enriched),
         },
     }
 
@@ -162,6 +253,7 @@ def _firewalls_data() -> dict:
         "fleet": fleet,
         "summary": firewalls.get_summary(fleet),
         "sslvpn_sessions": firewalls.get_sslvpn_sessions(hosts),
+        "ipsec_tunnels": firewalls.get_ipsec_tunnels(hosts),
         "problems": firewalls.get_firewall_problems(hosts),
     }
 

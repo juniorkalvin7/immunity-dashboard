@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}VPN Users{% endblock %}
+{% block breadcrumb_current %}VPN Users{% endblock %}
+{% block page_title %}VPN Users{% endblock %}
+{% block page_sub %}Atividade em tempo real dos usuários conectados à VPN{% endblock %}
+{% block content %}
+<section class="page vpn-activity-page">
+  <div class="vpn-kpis">
+    <article class="panel vpn-kpi"><span data-icon="users"></span><div><strong id="vpn-users-total">{{ summary.sslvpn_users }}</strong><small>Usuários ativos</small></div></article>
+    <article class="panel vpn-kpi"><span data-icon="shield"></span><div><strong>{{ fleet | length }}</strong><small>Firewalls monitorados</small></div></article>
+    <article class="panel vpn-kpi"><span data-icon="activity"></span><div><strong id="vpn-users-traffic">–</strong><small>Tráfego das sessões</small></div></article>
+  </div>
+  <article class="panel">
+    <div class="panel-title-row"><div><h2>Sessões ativas</h2><span>Usuários, origem, IP atribuído, tempo e consumo</span></div><span class="action-live"><i></i> TEMPO REAL</span></div>
+    <div class="filter-bar vpn-filter"><div class="search-wrap"><span class="search-icon" data-icon="search"></span><input id="vpn-user-search" type="search" placeholder="Buscar IP ou sessão" autocomplete="off"></div><select id="vpn-user-firewall"><option value="">Todos os firewalls</option></select><select id="vpn-user-name"><option value="">Todos os usuários</option></select><span class="queue-count" id="vpn-user-count">{{ sslvpn_sessions | length }} sessões</span></div>
+    <div class="table-scroll"><table class="user-table"><thead><tr><th>Status</th><th>Usuário</th><th>Firewall</th><th>IP origem</th><th>IP atribuído</th><th>Tipo</th><th>Conectado desde</th><th>Download</th><th>Upload</th></tr></thead><tbody id="vpn-user-rows">
+      {% for u in sslvpn_sessions %}<tr><td><span class="vpn-state is-up">ATIVO</span></td><td class="fw-name">{{ u.username }}</td><td>{{ u.host_name }}</td><td class="metric">{{ u.source_ip }}</td><td class="metric">{{ u.assigned_ip }}</td><td>{{ u.service_type or u.access_mode or 'SSL VPN' }}</td><td class="mono-dim">{{ u.connected_since }}</td><td class="metric" data-bytes="{{ u.download_bytes or 0 }}"></td><td class="metric" data-bytes="{{ u.upload_bytes or 0 }}"></td></tr>{% else %}<tr><td colspan="9" class="empty">Nenhum usuário conectado agora</td></tr>{% endfor %}
+    </tbody></table></div>
+  </article>
+</section>
+<script id="vpn-data" type="application/json">{{ sslvpn_sessions | tojson }}</script>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/vpn_activities.js') }}"></script>{% endblock %}

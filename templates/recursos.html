@@ -7,37 +7,77 @@
 {% block content %}
 <section class="page resources-page" id="page-resources">
   <div class="resource-summary">
-    <div><span data-icon="server"></span><strong id="res-total">–</strong><small>Problemas ativos</small></div>
+    <div><span data-icon="server"></span><strong id="res-total">–</strong><small>Recursos monitorados</small></div>
+    <div class="is-critical"><span data-icon="alertTriangle"></span><strong id="res-active">–</strong><small>Problemas ativos</small></div>
     <div class="is-warning"><span data-icon="bell"></span><strong id="res-unhandled">–</strong><small>Não tratados</small></div>
-    <div class="is-capacity"><span data-icon="activity"></span><strong id="res-resource">–</strong><small>De recursos</small></div>
-    <div class="is-critical"><span data-icon="alertTriangle"></span><strong id="res-critical">–</strong><small>Alta prioridade</small></div>
+    <div class="is-capacity"><span data-icon="activity"></span><strong id="res-resource">–</strong><small>Problemas de recursos</small></div>
   </div>
 
   <article class="panel resource-monitor-panel">
     <div class="resource-view-tabs" id="resource-view-tabs">
-      <button class="is-active" data-view="all"><span data-icon="layers"></span>Todos</button>
+      <button class="is-active" data-view="all"><span data-icon="layers"></span>Todos <b id="tab-all">0</b></button>
       <button data-view="unhandled"><span data-icon="bell"></span>Problemas não tratados <b id="tab-unhandled">0</b></button>
       <button data-view="resource"><span data-icon="activity"></span>Problemas de recursos <b id="tab-resource">0</b></button>
     </div>
 
     <div class="resource-toolbar">
+      <label class="resource-select-all"><input id="res-select-all" type="checkbox"><span>Selecionar página</span></label>
       <label class="resource-search"><span data-icon="search"></span><input id="res-search" type="search" placeholder="Buscar host, problema ou tag"></label>
       <select id="res-group"><option value="">Todos os grupos</option></select>
-      <select id="res-severity">
-        <option value="">Todas as severidades</option><option value="5">Disaster</option><option value="4">High</option><option value="3">Average</option><option value="2">Warning</option><option value="1">Information</option>
-      </select>
+      <div class="resource-status-filter" id="resource-status-filter">
+        <button id="res-status-button" type="button">Todos os estados <span>▾</span></button>
+        <div class="resource-status-menu" id="res-status-menu" hidden>
+          <label><input type="checkbox" value="ok"> <i class="status-dot is-ok"></i>OK <b id="status-count-ok">0</b></label>
+          <label><input type="checkbox" value="up"> <i class="status-dot is-up"></i>UP <b id="status-count-up">0</b></label>
+          <label><input type="checkbox" value="warning"> <i class="status-dot is-warning"></i>Warning <b id="status-count-warning">0</b></label>
+          <label><input type="checkbox" value="down"> <i class="status-dot is-down"></i>Down <b id="status-count-down">0</b></label>
+          <label><input type="checkbox" value="critical"> <i class="status-dot is-critical"></i>Critical <b id="status-count-critical">0</b></label>
+          <label><input type="checkbox" value="unreachable"> <i class="status-dot is-unreachable"></i>Unreachable <b id="status-count-unreachable">0</b></label>
+          <label><input type="checkbox" value="unknown"> <i class="status-dot is-unknown"></i>Unknown <b id="status-count-unknown">0</b></label>
+          <label><input type="checkbox" value="pending"> <i class="status-dot is-pending"></i>Pending <b id="status-count-pending">0</b></label>
+          <button id="res-clear-status" type="button">Limpar filtro</button>
+        </div>
+      </div>
       <span class="resource-results" id="res-results">0 resultados</span>
+    </div>
+
+    <div class="resource-bulkbar" id="resource-bulkbar" hidden>
+      <strong><span id="res-selected-count">0</span> selecionados</strong>
+      <button id="res-bulk-ack" type="button"><span data-icon="checkCircle"></span>Reconhecer</button>
+      <button id="res-bulk-maintenance" type="button"><span data-icon="clock"></span>Programar manutenção</button>
+      <button id="res-clear-selection" class="is-quiet" type="button">Limpar seleção</button>
     </div>
 
     <div class="resource-table-wrap">
       <table class="resource-table" id="resource-table">
-        <thead><tr><th data-sort="severity">Status</th><th data-sort="host_name">Host</th><th data-sort="group_name">Grupo</th><th>Recurso</th><th data-sort="name">Informação</th><th data-sort="clock">Duração</th><th data-sort="acknowledged">Tratamento</th><th>Ação</th></tr></thead>
-        <tbody id="resource-rows"><tr><td colspan="8" class="loading">Carregando recursos…</td></tr></tbody>
+        <thead><tr><th class="resource-check-col"></th><th data-sort="status_name">Status</th><th data-sort="host_name">Host</th><th data-sort="group_name">Grupo</th><th>Recurso</th><th data-sort="name">Informação</th><th data-sort="clock">Duração</th><th data-sort="acknowledged">Tratamento</th><th>Ação</th></tr></thead>
+        <tbody id="resource-rows"><tr><td colspan="9" class="loading">Carregando recursos…</td></tr></tbody>
       </table>
     </div>
     <div class="resource-pagination" id="resource-pagination"></div>
   </article>
 </section>
+
+<div class="resource-drawer-backdrop" id="resource-drawer-backdrop" hidden></div>
+<aside class="resource-drawer" id="resource-drawer" aria-hidden="true">
+  <header class="drawer-header">
+    <div><span class="sev-solid" id="drawer-severity">—</span><h2 id="drawer-title">Detalhes do recurso</h2><small id="drawer-host">—</small></div>
+    <button id="drawer-close" type="button" aria-label="Fechar">×</button>
+  </header>
+  <nav class="drawer-tabs">
+    <button class="is-active" data-drawer-tab="details">Detalhes</button>
+    <button data-drawer-tab="timeline">Linha do tempo</button>
+    <button data-drawer-tab="graph">Gráfico</button>
+  </nav>
+  <div class="drawer-body" id="drawer-body"><div class="drawer-loading">Carregando…</div></div>
+</aside>
+
+<dialog class="resource-dialog" id="ack-dialog">
+  <form method="dialog"><header><h2>Reconhecer problemas</h2><button value="cancel" aria-label="Fechar">×</button></header><p>Registre o que está sendo feito para manter o histórico operacional.</p><textarea id="ack-message" rows="4" placeholder="Ex.: Equipe acionada e diagnóstico iniciado"></textarea><footer><button value="cancel" class="is-quiet">Cancelar</button><button id="ack-confirm" value="default">Reconhecer</button></footer></form>
+</dialog>
+<dialog class="resource-dialog" id="maintenance-dialog">
+  <form method="dialog"><header><h2>Programar manutenção</h2><button value="cancel" aria-label="Fechar">×</button></header><label>Nome<input id="maintenance-name" value="Manutenção ANTIGEN"></label><label>Duração<select id="maintenance-minutes"><option value="30">30 minutos</option><option value="60" selected>1 hora</option><option value="120">2 horas</option><option value="240">4 horas</option><option value="480">8 horas</option><option value="1440">1 dia</option></select></label><label>Descrição<textarea id="maintenance-description" rows="3" placeholder="Motivo da manutenção"></textarea></label><footer><button value="cancel" class="is-quiet">Cancelar</button><button id="maintenance-confirm" value="default">Agendar manutenção</button></footer></form>
+</dialog>
 <script id="recursos-initial-data" type="application/json">{{ initial_json | safe }}</script>
 {% endblock %}
 {% block scripts %}<script src="{{ url_for('static', filename='js/recursos.js') }}"></script>{% endblock %}

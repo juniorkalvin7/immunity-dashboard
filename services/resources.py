@@ -4,6 +4,7 @@ The queries deliberately use standard Zabbix agent item-key prefixes so the
 dashboard works across Linux and Windows templates without template IDs.
 """
 import zbx
+import time
 
 CRITICAL_THRESHOLD = 85.0
 LIMIT_PER_RESOURCE = 7
@@ -194,4 +195,264 @@ def get_global_availability() -> dict:
     return {
         "down_hosts": len(_down_hosts()),
         "monitored_items": monitored_items,
+    }
+
+
+RESOURCE_TERMS = (
+    "cpu", "load", "memory", "memória", "memoria", "swap", "disk", "disco",
+    "storage", "filesystem", "file system", "space", "inode", "interface",
+    "network", "rede", "bandwidth", "latency", "packet loss",
+)
+AVAILABILITY_TERMS = (
+    "unreachable", "unavailable", "not available", "host is down", "ping",
+    "icmp", "availability", "disponibilidade", "link is down", "interface is down",
+)
+
+
+def _duration(clock) -> str:
+    diff = max(0, int(time.time()) - int(clock or 0))
+    days, rem = divmod(diff, 86400)
+    hours, rem = divmod(rem, 3600)
+    minutes, _ = divmod(rem, 60)
+    if days:
+        return f"{days}d {hours}h"
+    if hours:
+        return f"{hours}h {minutes}m"
+    return f"{minutes}m"
+
+
+def _operational_status(trigger: dict, item: dict | None) -> str:
+    text = f"{trigger.get('description', '')} {item.get('name', '') if item else ''}".lower()
+    if str(trigger.get("state")) == "1" or (item and str(item.get("state")) == "1"):
+        return "unknown"
+    if item and int(item.get("lastclock") or 0) == 0:
+        return "pending"
+    if str(trigger.get("value")) == "0":
+        return "up" if any(term in text for term in AVAILABILITY_TERMS) else "ok"
+    if "unreachable" in text or "sem resposta" in text:
+        return "unreachable"
+    if any(term in text for term in ("host is down", "link is down", "interface is down", "offline")):
+        return "down"
+    return "critical" if int(trigger.get("priority") or 0) >= 4 else "warning"
+
+
+def _item_status(item: dict) -> str:
+    if str(item.get("state")) == "1":
+        return "unknown"
+    text = f"{item.get('name', '')} {item.get('key_', '')}".lower()
+    return "up" if any(term in text for term in AVAILABILITY_TERMS) else "ok"
+
+
+def _catalog_value(value, limit: int = 240) -> str:
+    """Keep the catalogue payload small; the drawer fetches the full value."""
+    text = "" if value is None else str(value)
+    return text if len(text) <= limit else f"{text[:limit - 1]}…"
+
+
+def get_monitored_resources(active_incidents: list[dict]) -> dict:
+    """Return monitored items that have actually produced data.
+
+    Items are the truthful equivalent of Centreon resources. Triggers enrich
+    those items with problem state, but no trigger is required for an item to
+    appear in the catalogue.
+    """
+    items = _safe_call(
+        "item.get",
+        {
+            "output": ["itemid", "hostid", "name", "key_", "lastvalue", "lastclock", "units", "state", "value_type"],
+            "monitored": True,
+            "filter": {"status": 0},
+            "selectHosts": ["hostid", "name"],
+            "selectTags": "extend",
+        },
+    )
+    items = [
+        item for item in items
+        if int(item.get("lastclock") or 0) > 0
+        and item.get("lastvalue") not in (None, "")
+        and (item.get("hosts") or [])
+    ]
+    triggers = _safe_call(
+        "trigger.get",
+        {
+            "output": ["triggerid", "description", "value", "priority", "lastchange", "state", "error"],
+            "monitored": True,
+            "skipDependent": False,
+            "expandDescription": True,
+            "selectHosts": ["hostid", "name"],
+            "selectItems": ["itemid", "name", "key_", "lastvalue", "lastclock", "units", "state", "value_type"],
+            "selectTags": "extend",
+            "sortfield": "priority",
+            "sortorder": "DESC",
+        },
+    )
+    hostids = sorted({str(item.get("hostid")) for item in items if item.get("hostid")})
+    group_by_host = {}
+    if hostids:
+        hosts = _safe_call(
+            "host.get",
+            {"output": ["hostid"], "hostids": hostids, "selectHostGroups": ["name"]},
+        )
+        for host in hosts:
+            groups = host.get("hostgroups") or []
+            group_by_host[host["hostid"]] = groups[0]["name"] if groups else "—"
+
+    incident_by_trigger = {
+        str(incident.get("triggerid")): incident
+        for incident in active_incidents if incident.get("triggerid")
+    }
+    trigger_by_item = {}
+    for trigger in triggers:
+        for index, trigger_item in enumerate(trigger.get("items") or []):
+            itemid = str(trigger_item.get("itemid"))
+            current = trigger_by_item.get(itemid)
+            candidate = (trigger, index == 0)
+            if current is None or str(trigger.get("value")) == "1":
+                trigger_by_item[itemid] = candidate
+
+    rows = []
+    for item in items:
+        host = (item.get("hosts") or [{}])[0]
+        trigger, is_primary = trigger_by_item.get(str(item["itemid"]), (None, False))
+        incident = incident_by_trigger.get(str(trigger["triggerid"])) if trigger and is_primary else None
+        has_problem = bool(incident)
+        status = _operational_status(trigger, item) if has_problem else _item_status(item)
+        searchable = f"{item.get('name', '')} {item.get('key_', '')} {trigger.get('description', '') if trigger else ''}"
+        is_capacity = any(term in searchable.lower() for term in RESOURCE_TERMS)
+        clock = incident.get("clock") if incident else item.get("lastclock", 0)
+        item_tags = item.get("tags") or []
+        trigger_tags = trigger.get("tags") or [] if trigger else []
+        tags = [tag.get("value") or tag.get("tag") for tag in item_tags + trigger_tags]
+        rows.append(
+            {
+                "resource_id": f"item:{item['itemid']}",
+                "itemid": str(item["itemid"]),
+                "triggerid": str(trigger["triggerid"]) if has_problem else None,
+                "eventid": incident.get("eventid") if incident else None,
+                "hostid": host.get("hostid"),
+                "host_name": host.get("name", "—"),
+                "group_name": group_by_host.get(host.get("hostid"), "—"),
+                "name": item.get("name", "—"),
+                "problem_name": trigger.get("description", "") if has_problem else "",
+                "status_name": status,
+                "has_problem": has_problem,
+                "severity": int(trigger.get("priority") or 0) if has_problem else 0,
+                "severity_name": incident.get("severity_name") if incident else "not_classified",
+                "acknowledged": incident.get("acknowledged", False) if incident else False,
+                "clock": str(clock or 0),
+                "duration": _duration(clock),
+                "lastvalue": _catalog_value(item.get("lastvalue")),
+                "units": item.get("units", ""),
+                "item_name": item.get("name", ""),
+                "item_key": item.get("key_", ""),
+                "tags": list(dict.fromkeys(tag for tag in tags if tag)),
+                "is_resource_problem": bool(incident) and is_capacity,
+            }
+        )
+    status_counts = {name: 0 for name in ("ok", "up", "warning", "down", "critical", "unreachable", "unknown", "pending")}
+    for row in rows:
+        status_counts[row["status_name"]] += 1
+    return {"resources": rows, "status_counts": status_counts}
+
+
+def _item_history(item: dict, hours: int) -> list[dict]:
+    raw = zbx.call(
+        "history.get",
+        {"output": "extend", "history": int(item.get("value_type", 0)), "itemids": [item["itemid"]], "time_from": int(time.time()) - hours * 3600, "sortfield": "clock", "sortorder": "ASC", "limit": 600},
+    )
+    history = []
+    for point in raw:
+        try:
+            history.append({"clock": int(point["clock"]), "value": float(point["value"])})
+        except (KeyError, TypeError, ValueError):
+            continue
+    return history
+
+
+def get_item_details(itemid: str, hours: int = 24) -> dict:
+    hours = max(1, min(int(hours), 24 * 31))
+    found = zbx.call(
+        "item.get",
+        {
+            "output": ["itemid", "hostid", "name", "key_", "lastvalue", "lastclock", "units", "state", "value_type"],
+            "itemids": [itemid],
+            "selectHosts": ["hostid", "name"],
+            "selectTags": "extend",
+        },
+    )
+    if not found:
+        raise ValueError("Recurso não encontrado")
+    item = found[0]
+    host = (item.get("hosts") or [{}])[0]
+    status = _item_status(item)
+    clock = int(item.get("lastclock") or 0)
+    return {
+        "eventid": None,
+        "triggerid": None,
+        "name": item.get("name", "—"),
+        "severity": 0,
+        "severity_name": status,
+        "status_name": status,
+        "acknowledged": False,
+        "clock": clock,
+        "duration": _duration(clock),
+        "hostid": host.get("hostid") or item.get("hostid"),
+        "host_name": host.get("name", "—"),
+        "tags": item.get("tags") or [],
+        "trigger": None,
+        "item": {"itemid": item.get("itemid"), "name": item.get("name"), "key": item.get("key_"), "lastvalue": item.get("lastvalue"), "units": item.get("units", "")},
+        "timeline": [{"clock": clock, "type": "normal", "user": "Zabbix", "message": "Último valor coletado"}],
+        "history": _item_history(item, hours),
+        "period_hours": hours,
+    }
+
+
+def get_trigger_details(triggerid: str, hours: int = 24) -> dict:
+    hours = max(1, min(int(hours), 24 * 31))
+    triggers = zbx.call(
+        "trigger.get",
+        {
+            "output": ["triggerid", "description", "expression", "priority", "lastchange", "comments", "opdata", "value", "state"],
+            "triggerids": [triggerid],
+            "expandDescription": True,
+            "selectHosts": ["hostid", "name"],
+            "selectItems": ["itemid", "name", "key_", "lastvalue", "units", "value_type", "lastclock", "state"],
+            "selectTags": "extend",
+        },
+    )
+    if not triggers:
+        raise ValueError("Recurso não encontrado")
+    trigger = triggers[0]
+    host = (trigger.get("hosts") or [{}])[0]
+    item = (trigger.get("items") or [None])[0]
+    history = []
+    if item:
+        raw = zbx.call(
+            "history.get",
+            {"output": "extend", "history": int(item.get("value_type", 0)), "itemids": [item["itemid"]], "time_from": int(time.time()) - hours * 3600, "sortfield": "clock", "sortorder": "ASC", "limit": 600},
+        )
+        for point in raw:
+            try:
+                history.append({"clock": int(point["clock"]), "value": float(point["value"])})
+            except (KeyError, TypeError, ValueError):
+                continue
+    status = _operational_status(trigger, item)
+    return {
+        "eventid": None,
+        "triggerid": triggerid,
+        "name": trigger.get("description", "—"),
+        "severity": int(trigger.get("priority", 0)),
+        "severity_name": status,
+        "status_name": status,
+        "acknowledged": False,
+        "clock": int(trigger.get("lastchange", 0)),
+        "duration": _duration(trigger.get("lastchange", 0)),
+        "hostid": host.get("hostid"),
+        "host_name": host.get("name", "—"),
+        "tags": trigger.get("tags") or [],
+        "trigger": {"id": triggerid, "expression": trigger.get("expression", "—"), "comments": trigger.get("comments", ""), "operational_data": trigger.get("opdata", "")},
+        "item": ({"itemid": item.get("itemid"), "name": item.get("name"), "key": item.get("key_"), "lastvalue": item.get("lastvalue"), "units": item.get("units", "")} if item else None),
+        "timeline": [{"clock": int(trigger.get("lastchange", 0)), "type": "normal", "user": "Zabbix", "message": f"Estado atual: {status.upper()}"}],
+        "history": history,
+        "period_hours": hours,
     }

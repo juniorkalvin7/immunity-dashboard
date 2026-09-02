@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Antigen Netviso — {% block title %}Painel{% endblock %}</title>
+<script>
+  (function () {
+    var saved = localStorage.getItem("antigen.theme") || "light";
+    document.documentElement.dataset.theme = saved === "dark" ? "dark" : "light";
+  }());
+</script>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
 </head>
 <body class="page-{{ active_page }}">
@@ -19,15 +25,11 @@
       </span>
     </div>
     <ul class="nav-list">
+      <li><a href="{{ url_for('home_page') }}" class="nav-link {{ 'active' if active_page == 'home' }}"><span data-icon="overview"></span><span class="nav-label">Home</span></a></li>
       <li class="nav-section">MONITORAMENTO</li>
-      <li><a href="{{ url_for('overview_page') }}" class="nav-link {{ 'active' if active_page == 'overview' }}"><span data-icon="overview"></span><span class="nav-label">Visão Geral</span></a></li>
-      <li><a href="{{ url_for('incidentes_page') }}" class="nav-link {{ 'active' if active_page == 'incidentes' }}"><span data-icon="bell"></span><span class="nav-label">Incidentes</span></a></li>
       <li><a href="{{ url_for('recursos_page') }}" class="nav-link {{ 'active' if active_page == 'recursos' }}"><span data-icon="server"></span><span class="nav-label">Recursos</span></a></li>
-      <li><a href="{{ url_for('firewalls_page') }}" class="nav-link {{ 'active' if active_page == 'firewalls' }}"><span data-icon="shield"></span><span class="nav-label">Firewalls Sophos</span></a></li>
-      <li><span class="nav-link is-disabled"><span data-icon="monitor"></span><span class="nav-label">Hosts</span></span></li>
-      <li class="nav-section nav-section-spaced">GESTÃO</li>
-      <li><span class="nav-link is-disabled"><span data-icon="report"></span><span class="nav-label">Relatórios</span></span></li>
-      <li><span class="nav-link is-disabled"><span data-icon="settings"></span><span class="nav-label">Configurações</span></span></li>
+      <li><a href="{{ url_for('vpn_users_page') }}" class="nav-link {{ 'active' if active_page == 'vpn_users' }}"><span data-icon="users"></span><span class="nav-label">VPN Users</span></a></li>
+      <li><a href="{{ url_for('vpn_ipsec_page') }}" class="nav-link {{ 'active' if active_page == 'vpn_ipsec' }}"><span data-icon="link"></span><span class="nav-label">VPN IPsec</span></a></li>
     </ul>
     <div class="sidebar-status">
       <div><span id="conn-dot" class="dot dot-ok"></span> Zabbix conectado</div>
@@ -63,6 +65,9 @@
             <span class="strip-count is-ok" title="Itens monitorados sem problema"><strong id="bar-svc-ok">–</strong><small>OK</small></span>
           </div>
         </section>
+        <button class="icon-btn theme-toggle" type="button" title="Alternar tema" id="theme-toggle" aria-label="Ativar tema escuro" aria-pressed="false">
+          <span id="theme-icon" data-icon="moon"></span>
+        </button>
         <button class="icon-btn" type="button" title="Notificações" id="notif-btn">
           <span class="icon-slot" data-icon="bell"></span>
           <span class="notif-badge" id="notif-badge" hidden>0</span>

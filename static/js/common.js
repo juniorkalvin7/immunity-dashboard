@@ -134,9 +134,37 @@ function setupSidebarToggle() {
   });
 }
 
+function setupThemeToggle() {
+  const button = document.getElementById("theme-toggle");
+  if (!button) return;
+  const storageKey = "antigen.theme";
+
+  function apply(theme) {
+    const normalized = theme === "dark" ? "dark" : "light";
+    document.documentElement.dataset.theme = normalized;
+    const dark = normalized === "dark";
+    button.setAttribute("aria-pressed", String(dark));
+    button.setAttribute("aria-label", dark ? "Ativar tema claro" : "Ativar tema escuro");
+    button.title = dark ? "Ativar tema claro" : "Ativar tema escuro";
+    const icon = document.getElementById("theme-icon");
+    if (icon) icon.innerHTML = dark ? ICONS.sun : ICONS.moon;
+  }
+
+  apply(localStorage.getItem(storageKey) || document.documentElement.dataset.theme || "light");
+  button.addEventListener("click", () => {
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    localStorage.setItem(storageKey, next);
+    apply(next);
+  });
+  window.addEventListener("storage", (event) => {
+    if (event.key === storageKey && event.newValue) apply(event.newValue);
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   hydrateByteCells();
   hydrateIcons();
+  setupThemeToggle();
   setupSidebarToggle();
   refreshStatusBar();
   setInterval(refreshStatusBar, REFRESH_MS);
