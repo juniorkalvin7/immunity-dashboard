@@ -1188,6 +1188,39 @@ html[data-theme="light"] .mono-dim, html[data-theme="light"] .resource-group, ht
 .home-incidents { scroll-margin-top: 24px; margin-top: 18px; }
 .home-incidents .queue-header > div { display: flex; align-items: baseline; gap: 12px; }
 .page-home .breadcrumb { display: none; }
+.home-command-kpis { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 10px; margin-bottom: 14px; }
+.home-command-kpi { min-width: 0; min-height: 82px; display: grid; grid-template-columns: 34px minmax(0,1fr); align-items: center; gap: 10px; padding: 11px 12px; color: var(--text); text-decoration: none; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 8px; background: linear-gradient(145deg, rgba(16,30,42,.96), rgba(9,19,28,.96)); }
+.home-command-kpi:hover { border-color: #355064; transform: translateY(-1px); }
+.home-command-kpi > span { width: 34px; height: 34px; display: grid; place-items: center; color: var(--accent); border-radius: 8px; background: rgba(24,183,241,.1); }
+.home-command-kpi > span svg { width: 17px; height: 17px; }
+.home-command-kpi > div { min-width: 0; display: grid; gap: 1px; }
+.home-command-kpi small { overflow: hidden; color: var(--text-dim); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.home-command-kpi strong { color: var(--text); font: 700 23px var(--mono); line-height: 1.1; }
+.home-command-kpi em { overflow: hidden; color: var(--text-faint); font-size: 8px; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
+.home-command-kpi.is-critical { border-left-color: var(--bad); }
+.home-command-kpi.is-critical > span, .home-command-kpi.is-critical strong { color: var(--bad); }
+.home-command-kpi.is-critical > span { background: rgba(229,72,77,.11); }
+.home-command-kpi.is-warning { border-left-color: var(--warn); }
+.home-command-kpi.is-warning > span, .home-command-kpi.is-warning strong { color: var(--warn); }
+.home-command-kpi.is-warning > span { background: rgba(232,161,61,.1); }
+.home-command-kpi.is-clear { border-left-color: var(--ok); }
+.home-command-kpi.is-clear > span, .home-command-kpi.is-clear strong { color: var(--ok); }
+.home-command-kpi.is-clear > span { background: rgba(62,207,110,.1); }
+.home-priority-grid { grid-template-columns: 1fr; margin-bottom: 14px; }
+.home-vpn-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; margin: 14px 0; }
+.home-vpn-card { min-height: 88px; display: grid; grid-template-columns: 42px minmax(0,1fr) 18px; align-items: center; gap: 12px; color: var(--text); text-decoration: none; }
+.home-vpn-card:hover { border-color: #355064; }
+.home-vpn-icon { width: 40px; height: 40px; display: grid; place-items: center; color: var(--accent); border-radius: 9px; background: rgba(24,183,241,.1); }
+.home-vpn-icon svg { width: 20px; height: 20px; }
+.home-vpn-card > div { min-width: 0; display: grid; gap: 3px; }
+.home-vpn-card small { color: var(--accent); font: 700 8px var(--mono); letter-spacing: .06em; }
+.home-vpn-card strong { font-size: 14px; }
+.home-vpn-card strong b { font: 700 21px var(--mono); }
+.home-vpn-card strong i { color: var(--text-faint); font-style: normal; }
+.home-vpn-card em { color: var(--text-dim); font-size: 9px; font-style: normal; }
+.home-card-arrow { color: var(--accent); font-size: 18px; }
+html[data-theme="light"] .home-command-kpi { background: #fff; box-shadow: 0 2px 10px rgba(42,65,81,.045); }
+.ack-btn.is-unack { color: var(--warn); border-color: rgba(232,161,61,.45); }
 .vpn-kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 14px; }
 .vpn-kpi { min-height: 92px; display: flex; align-items: center; gap: 14px; border-left: 3px solid var(--accent); }
 .vpn-kpi > span { width: 40px; height: 40px; padding: 10px; color: var(--accent); border-radius: 10px; background: rgba(24,183,241,.1); }
@@ -1208,6 +1241,7 @@ html[data-theme="light"] .mono-dim, html[data-theme="light"] .resource-group, ht
 .table-scroll { overflow-x: auto; }
 
 @media (max-width: 1450px) {
+  .home-command-kpis { grid-template-columns: repeat(3, minmax(0,1fr)); }
   .stat-card { padding: 12px; gap: 9px; }
   .stat-icon { width: 30px; height: 30px; flex-basis: 30px; }
   .stat-trend { font-size: 9px; }
@@ -1513,6 +1547,7 @@ html[data-theme="light"] .mono-dim, html[data-theme="light"] .resource-group, ht
 }
 
 @media (max-width: 1050px) {
+  .home-command-kpis { grid-template-columns: repeat(2, minmax(0,1fr)); }
   .overview-kpis { grid-template-columns: repeat(3, 1fr); }
   .overview-grid-main, .overview-grid-lower { grid-template-columns: 1fr; }
   .overview-network-card { grid-column: auto; }
@@ -1525,6 +1560,7 @@ html[data-theme="light"] .mono-dim, html[data-theme="light"] .resource-group, ht
 }
 
 @media (max-width: 620px) {
+  .home-command-kpis, .home-vpn-grid { grid-template-columns: 1fr; }
   .overview-kpis { grid-template-columns: repeat(2, 1fr); }
   .overview-kpi { min-height: 88px; }
   .overview-kpi-icon { display: none; }

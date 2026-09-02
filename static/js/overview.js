@@ -36,11 +36,27 @@ function renderProactiveOverview(data, pressure, criticalCount) {
   setOverviewText("ov-queue-unack", summary.unacknowledged);
   setOverviewText("ov-queue-capacity", capacity.length);
   setOverviewText("ov-queue-connectivity", connectivityCount);
+  setOverviewText("ov-vpn-users", Number(firewalls.sslvpn_users || 0));
+  setOverviewText("ov-vpn-users-detail", Number(firewalls.sslvpn_users || 0));
+  setOverviewText("ov-ipsec-up", Number(firewalls.ipsec_up || 0));
+  setOverviewText("ov-ipsec-down", Number(firewalls.ipsec_down || 0));
+  setOverviewText("ov-ipsec-down-detail", Number(firewalls.ipsec_down || 0));
   setOverviewText("ov-capacity-counter", `${capacity.length} risco${capacity.length === 1 ? "" : "s"}`);
+  setHomeKpiState("critical", criticalCount);
+  setHomeKpiState("down", downCount);
+  setHomeKpiState("unack", summary.unacknowledged);
+  setHomeKpiState("capacity", capacity.length);
+  setHomeKpiState("ipsec", Number(firewalls.ipsec_down || 0));
 
   renderPriorityActions(data, pressure, capacity);
   renderCapacityRisks(capacity);
   renderUnacknowledged((data.incidents || []).filter((item) => !item.acknowledged));
+}
+
+function setHomeKpiState(name, count) {
+  const card = document.querySelector(`[data-home-state="${name}"]`);
+  if (!card) return;
+  card.classList.toggle("is-clear", Number(count) === 0);
 }
 
 function renderPriorityActions(data, pressure, capacity) {

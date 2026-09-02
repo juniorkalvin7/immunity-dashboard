@@ -189,7 +189,7 @@ function statusHtml(inc) {
 }
 
 function actionHtml(inc) {
-  return inc.acknowledged ? "" : `<button class="ack-btn" data-eventid="${inc.eventid}">Reconhecer</button>`;
+  return `<button class="ack-btn ${inc.acknowledged ? "is-unack" : ""}" data-eventid="${inc.eventid}" data-mode="${inc.acknowledged ? "unack" : "ack"}">${inc.acknowledged ? "Desreconhecer" : "Reconhecer"}</button>`;
 }
 
 function renderTable() {
@@ -284,22 +284,23 @@ function renderPagination(totalItems, totalPages) {
 async function onAcknowledgeClick(ev) {
   const btn = ev.currentTarget;
   const eventid = btn.dataset.eventid;
+  const unacknowledging = btn.dataset.mode === "unack";
   btn.disabled = true;
   btn.textContent = "…";
   try {
-    const res = await fetch(`/api/incidentes/${eventid}/ack`, { method: "POST" });
+    const res = await fetch(`/api/incidentes/${eventid}/${unacknowledging ? "unack" : "ack"}`, { method: "POST" });
     const body = await res.json();
     if (!body.ok) throw new Error(body.error || "falha ao reconhecer");
     const inc = allIncidents.find((i) => i.eventid === eventid);
     if (inc) {
-      inc.acknowledged = true;
+      inc.acknowledged = !unacknowledging;
       const summaryEl = document.getElementById("inc-unack");
-      summaryEl.textContent = Math.max(0, Number(summaryEl.textContent) - 1);
+      if (summaryEl) summaryEl.textContent = Math.max(0, Number(summaryEl.textContent) + (unacknowledging ? 1 : -1));
     }
     renderTable();
   } catch (e) {
     btn.disabled = false;
-    btn.textContent = "Reconhecer";
+    btn.textContent = unacknowledging ? "Desreconhecer" : "Reconhecer";
     setConnStatus(false, e.message);
   }
 }

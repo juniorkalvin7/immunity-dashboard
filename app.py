@@ -130,6 +130,16 @@ def api_ack_incidente(eventid):
     return jsonify({"ok": True})
 
 
+@app.route("/api/incidentes/<eventid>/unack", methods=["POST"])
+def api_unack_incidente(eventid):
+    message = (request.get_json(silent=True) or {}).get("message", "")
+    try:
+        incidents.unacknowledge_many([eventid], message)
+    except Exception as exc:  # noqa: BLE001 - surfaced to the caller as-is
+        return jsonify({"ok": False, "error": str(exc)}), 502
+    return jsonify({"ok": True})
+
+
 @app.route("/api/recursos/<eventid>/details")
 def api_recurso_details(eventid):
     try:
